@@ -3,7 +3,6 @@ import "./authenticate-premiumize";
 import "./authenticate-all-debrid";
 import "./authenticate-torbox";
 import "./authenticate-google-drive";
-import "./disconnect-google-drive";
 import "./auto-launch";
 import "./get-user-preferences";
 import "./update-user-preferences";

@@ -99,15 +99,4 @@ export class GoogleDriveService {
       },
     });
   }
-
-  public static async revoke(refreshToken: string) {
-    const { clientId, clientSecret, redirectUri } = getGoogleDriveOAuthConfig();
-    const oauth2Client = new google.auth.OAuth2(
-      clientId,
-      clientSecret,
-      redirectUri
-    );
-
-    await oauth2Client.revokeToken(refreshToken);
-  }
 }

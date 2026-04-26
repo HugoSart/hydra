@@ -104,4 +104,21 @@
     display: flex;
     justify-content: flex-start;
   }
+
+  &__storage-options {
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
+  }
+
+  &__checkbox-label {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 0.5);
+
+    small {
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+  }
 }

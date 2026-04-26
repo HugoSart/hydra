@@ -108,6 +108,8 @@ export type AchievementCustomNotificationPosition =
   | "bottom-center"
   | "bottom-right";
 
+export type GoogleDriveStorageMode = "appData" | "customFolder";
+
 export interface UserPreferences {
   downloadsPath?: string | null;
   ggDealsApiKey?: string | null;
@@ -118,6 +120,8 @@ export interface UserPreferences {
   torBoxApiToken?: string | null;
   googleDriveRefreshToken?: string | null;
   googleDriveAccountEmail?: string | null;
+  googleDriveStorageMode?: GoogleDriveStorageMode;
+  googleDriveCustomPath?: string | null;
   preferQuitInsteadOfHiding?: boolean;
   runAtStartup?: boolean;
   startMinimized?: boolean;
