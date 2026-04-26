@@ -271,6 +271,7 @@ declare global {
       refreshToken: string;
       accountEmail: string;
     }>;
+    disconnectGoogleDrive: (refreshToken: string | null) => Promise<void>;
     getUserPreferences: () => Promise<UserPreferences | null>;
     updateUserPreferences: (
       preferences: Partial<UserPreferences>

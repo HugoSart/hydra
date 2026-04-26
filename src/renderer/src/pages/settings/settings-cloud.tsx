@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   CheckCircleFillIcon,
   ChevronRightIcon,
@@ -16,17 +16,25 @@ export function SettingsCloud() {
     (state) => state.userPreferences.value
   );
   const { updateUserPreferences } = useContext(settingsContext);
-  const { showSuccessToast, showErrorToast } = useToast();
+  const { showSuccessToast, showErrorToast, showWarningToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const hasInitializedCollapse = useRef(false);
 
   useEffect(() => {
-    setAccountEmail(userPreferences?.googleDriveAccountEmail ?? null);
-    setIsCollapsed(!userPreferences?.googleDriveAccountEmail);
-  }, [userPreferences]);
+    const nextAccountEmail = userPreferences?.googleDriveAccountEmail ?? null;
+    setAccountEmail(nextAccountEmail);
+
+    if (!hasInitializedCollapse.current) {
+      setIsCollapsed(!nextAccountEmail);
+      hasInitializedCollapse.current = true;
+    }
+  }, [userPreferences?.googleDriveAccountEmail]);
 
   const handleConnectGoogleDrive = async () => {
+    if (isLoading) return;
+
     setIsLoading(true);
 
     try {
@@ -38,6 +46,7 @@ export function SettingsCloud() {
       });
 
       setAccountEmail(result.accountEmail);
+      setIsCollapsed(false);
       showSuccessToast("Google Drive connected", result.accountEmail);
     } catch (error) {
       showErrorToast(
@@ -50,16 +59,35 @@ export function SettingsCloud() {
   };
 
   const handleDisconnectGoogleDrive = async () => {
+    if (isLoading) return;
+
     setIsLoading(true);
 
     try {
+      let revokeFailed = false;
+      const refreshToken = userPreferences?.googleDriveRefreshToken ?? null;
+
+      try {
+        await window.electron.disconnectGoogleDrive(refreshToken);
+      } catch {
+        revokeFailed = true;
+      }
+
       await updateUserPreferences({
         googleDriveRefreshToken: null,
         googleDriveAccountEmail: null,
       });
 
       setAccountEmail(null);
-      showSuccessToast("Google Drive disconnected");
+
+      if (revokeFailed) {
+        showWarningToast(
+          "Google Drive disconnected locally",
+          "Hydra could not revoke Google access. You can remove it from your Google account permissions."
+        );
+      } else {
+        showSuccessToast("Google Drive disconnected");
+      }
     } catch (error) {
       showErrorToast(
         "Could not disconnect Google Drive",
@@ -131,7 +159,7 @@ export function SettingsCloud() {
                   className="settings-cloud__create-account"
                 >
                   <LinkExternalIcon />
-                  Click here if you don't have a Google Drive account yet
+                  Click here if you don&apos;t have a Google Drive account yet
                 </Link>
               </div>
             )}
