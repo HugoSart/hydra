@@ -1,0 +1,107 @@
+@use "../../scss/globals.scss";
+
+.settings-cloud {
+  display: flex;
+  flex-direction: column;
+  gap: calc(globals.$spacing-unit * 2);
+
+  &__description,
+  &__provider-description {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  &__description-container {
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
+  }
+
+  &__create-account {
+    display: flex;
+    align-items: center;
+    gap: calc(globals.$spacing-unit * 0.75);
+    width: fit-content;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 1.5);
+
+    &--expanded:not(:last-child) {
+      margin-bottom: calc(globals.$spacing-unit * 3);
+    }
+  }
+
+  &__section-header {
+    display: flex;
+    align-items: center;
+    gap: globals.$spacing-unit;
+    margin-bottom: calc(globals.$spacing-unit * 0.5);
+  }
+
+  &__section-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  &__check-icon {
+    color: white;
+    flex-shrink: 0;
+  }
+
+  &__collapse-button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.9);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  &__collapse-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &--expanded {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__section-content {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 1.5);
+  }
+
+  &__account {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 0.5);
+    color: var(--text-primary);
+  }
+
+  &__account-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-start;
+  }
+}
