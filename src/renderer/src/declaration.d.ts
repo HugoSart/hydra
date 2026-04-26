@@ -271,6 +271,10 @@ declare global {
       refreshToken: string;
       accountEmail: string;
     }>;
+    authenticateDropbox: () => Promise<{
+      refreshToken: string;
+      accountEmail: string;
+    }>;
     getUserPreferences: () => Promise<UserPreferences | null>;
     updateUserPreferences: (
       preferences: Partial<UserPreferences>

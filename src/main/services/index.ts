@@ -25,3 +25,4 @@ export * from "./notifications/local-notifications";
 export * from "./power-save-blocker";
 export * from "./native-addon";
 export * from "./cloud/google-drive";
+export * from "./cloud/dropbox";

@@ -108,7 +108,7 @@ export type AchievementCustomNotificationPosition =
   | "bottom-center"
   | "bottom-right";
 
-export type GoogleDriveStorageMode = "appData" | "customFolder";
+export type CloudStorageMode = "appData" | "customFolder";
 
 export interface UserPreferences {
   downloadsPath?: string | null;
@@ -120,8 +120,12 @@ export interface UserPreferences {
   torBoxApiToken?: string | null;
   googleDriveRefreshToken?: string | null;
   googleDriveAccountEmail?: string | null;
-  googleDriveStorageMode?: GoogleDriveStorageMode;
+  googleDriveStorageMode?: CloudStorageMode;
   googleDriveCustomPath?: string | null;
+  dropboxRefreshToken?: string | null;
+  dropboxAccountEmail?: string | null;
+  dropboxStorageMode?: CloudStorageMode;
+  dropboxCustomPath?: string | null;
   preferQuitInsteadOfHiding?: boolean;
   runAtStartup?: boolean;
   startMinimized?: boolean;

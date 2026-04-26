@@ -121,6 +121,7 @@ contextBridge.exposeInMainWorld("electron", {
   authenticateTorBox: (apiToken: string) =>
     ipcRenderer.invoke("authenticateTorBox", apiToken),
   authenticateGoogleDrive: () => ipcRenderer.invoke("authenticateGoogleDrive"),
+  authenticateDropbox: () => ipcRenderer.invoke("authenticateDropbox"),
 
   /* Download sources */
   addDownloadSource: (url: string) =>
