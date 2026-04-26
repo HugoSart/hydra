@@ -51,6 +51,7 @@ const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
 
 export const loadState = async () => {
   await Lock.acquireLock();
+  await db.open();
 
   const userPreferences = await db.get<string, UserPreferences | null>(
     levelKeys.userPreferences,
