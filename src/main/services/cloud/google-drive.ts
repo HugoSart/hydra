@@ -50,8 +50,7 @@ export class GoogleDriveService {
   public static async authenticate() {
     await closeActiveAuthServer();
 
-    const { clientId, clientSecret, redirectUri } =
-      getGoogleDriveOAuthConfig();
+    const { clientId, clientSecret, redirectUri } = getGoogleDriveOAuthConfig();
     const oauth2Client = new google.auth.OAuth2(
       clientId,
       clientSecret,
