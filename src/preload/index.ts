@@ -399,6 +399,37 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("downloadGameArtifact", objectId, shop, gameArtifactId),
   getGameArtifacts: (objectId: string, shop: GameShop) =>
     ipcRenderer.invoke("getGameArtifacts", objectId, shop),
+  deleteGameArtifact: (
+    objectId: string,
+    shop: GameShop,
+    gameArtifactId: string
+  ) => ipcRenderer.invoke("deleteGameArtifact", objectId, shop, gameArtifactId),
+  renameGameArtifact: (
+    objectId: string,
+    shop: GameShop,
+    gameArtifactId: string,
+    label: string
+  ) =>
+    ipcRenderer.invoke(
+      "renameGameArtifact",
+      objectId,
+      shop,
+      gameArtifactId,
+      label
+    ),
+  toggleGameArtifactFreeze: (
+    objectId: string,
+    shop: GameShop,
+    gameArtifactId: string,
+    freeze: boolean
+  ) =>
+    ipcRenderer.invoke(
+      "toggleGameArtifactFreeze",
+      objectId,
+      shop,
+      gameArtifactId,
+      freeze
+    ),
   getGameBackupPreview: (objectId: string, shop: GameShop) =>
     ipcRenderer.invoke("getGameBackupPreview", objectId, shop),
   selectGameBackupPath: (
@@ -434,9 +465,10 @@ contextBridge.exposeInMainWorld("electron", {
   onBackupDownloadComplete: (
     objectId: string,
     shop: GameShop,
-    cb: () => void
+    cb: (success: boolean) => void
   ) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
+    const listener = (_event: Electron.IpcRendererEvent, success: boolean) =>
+      cb(success);
     ipcRenderer.on(`on-backup-download-complete-${objectId}-${shop}`, listener);
     return () =>
       ipcRenderer.removeListener(

@@ -340,6 +340,23 @@ declare global {
       objectId: string,
       shop: GameShop
     ) => Promise<GameArtifact[]>;
+    deleteGameArtifact: (
+      objectId: string,
+      shop: GameShop,
+      gameArtifactId: string
+    ) => Promise<void>;
+    renameGameArtifact: (
+      objectId: string,
+      shop: GameShop,
+      gameArtifactId: string,
+      label: string
+    ) => Promise<void>;
+    toggleGameArtifactFreeze: (
+      objectId: string,
+      shop: GameShop,
+      gameArtifactId: string,
+      freeze: boolean
+    ) => Promise<void>;
     getGameBackupPreview: (
       objectId: string,
       shop: GameShop
@@ -352,7 +369,7 @@ declare global {
     onBackupDownloadComplete: (
       objectId: string,
       shop: GameShop,
-      cb: () => void
+      cb: (success: boolean) => void
     ) => () => Electron.IpcRenderer;
     onUploadComplete: (
       objectId: string,

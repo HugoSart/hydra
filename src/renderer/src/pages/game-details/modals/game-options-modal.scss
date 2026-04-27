@@ -90,6 +90,12 @@
     gap: globals.$spacing-unit;
   }
 
+  &__cloud-saves {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 2);
+  }
+
   &__row {
     display: flex;
     gap: globals.$spacing-unit;

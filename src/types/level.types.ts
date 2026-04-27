@@ -7,6 +7,7 @@ import type {
 import type { DownloadStatus } from "./download.types";
 
 export type SubscriptionStatus = "active" | "pending" | "cancelled";
+export type CloudSaveProvider = "googleDrive" | "dropbox";
 
 export interface Subscription {
   id: string;
@@ -65,6 +66,7 @@ export interface Game {
   unlockedAchievementCount?: number;
   pinnedDate?: Date | null;
   automaticCloudSync?: boolean;
+  cloudSaveProvider?: CloudSaveProvider | null;
   hasManuallyUpdatedPlaytime?: boolean;
   newDownloadOptionsCount?: number;
   installedSizeInBytes?: number | null;

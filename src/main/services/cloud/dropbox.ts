@@ -1,4 +1,13 @@
 import { URL } from "node:url";
+import type { GameArtifact, GameShop, UserPreferences } from "@types";
+import {
+  CLOUD_SYNC_MANIFEST_FILE_NAME,
+  DEFAULT_EXTERNAL_CLOUD_ROOT_FOLDER,
+  type CloudSyncManifest,
+  type CloudSyncStoredArtifact,
+  createEmptyCloudSyncManifest,
+  getCloudSyncGameFolderName,
+} from "./cloud-sync-manifest";
 import {
   createOAuthState,
   waitForOAuthCallback,
@@ -32,6 +41,10 @@ interface DropboxAccountResponse {
   };
 }
 
+interface DropboxMetadataResponse {
+  error_summary?: string;
+}
+
 const getDropboxOAuthConfig = () => {
   const clientId = import.meta.env.MAIN_VITE_DROPBOX_APP_KEY;
   const clientSecret = import.meta.env.MAIN_VITE_DROPBOX_APP_SECRET;
@@ -55,6 +68,44 @@ const getDropboxCallbackError = (callbackUrl: URL) => {
   }
 
   return new Error(`Dropbox connection failed: ${error}`);
+};
+
+const normalizeDropboxPath = (value: string) =>
+  value
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .replace(/\/{2,}/g, "/");
+
+const getDropboxStorageMode = (userPreferences: UserPreferences | null) =>
+  userPreferences?.dropboxStorageMode ?? "appData";
+
+const getDropboxBasePathSegments = (
+  userPreferences: UserPreferences | null
+) => {
+  const storageMode = getDropboxStorageMode(userPreferences);
+
+  if (storageMode === "customFolder") {
+    const customPath = normalizeDropboxPath(
+      userPreferences?.dropboxCustomPath ?? ""
+    );
+
+    if (!customPath) {
+      throw new Error("Dropbox custom path is not configured");
+    }
+
+    return customPath.split("/");
+  }
+
+  return [DEFAULT_EXTERNAL_CLOUD_ROOT_FOLDER];
+};
+
+const joinDropboxPath = (...segments: string[]) => {
+  const normalized = segments
+    .map((segment) => normalizeDropboxPath(segment))
+    .filter(Boolean)
+    .join("/");
+
+  return normalized ? `/${normalized}` : "";
 };
 
 const parseDropboxError = async (
@@ -154,6 +205,434 @@ const getDropboxAccount = async (accessToken: string) => {
 };
 
 export class DropboxService {
+  private static getDropboxGameFolderPath(
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string
+  ) {
+    return joinDropboxPath(
+      ...getDropboxBasePathSegments(userPreferences),
+      getCloudSyncGameFolderName(shop, objectId)
+    );
+  }
+
+  private static async getAccessToken(refreshToken: string) {
+    const { clientId, clientSecret } = getDropboxOAuthConfig();
+
+    const tokenResponse = await fetch(DROPBOX_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error(
+        await parseDropboxError(
+          tokenResponse,
+          "Dropbox did not return an access token"
+        )
+      );
+    }
+
+    const tokens = (await tokenResponse.json()) as DropboxTokenResponse;
+
+    if (!tokens.access_token) {
+      throw new Error("Dropbox did not return an access token");
+    }
+
+    return tokens.access_token;
+  }
+
+  private static async rpcRequest<T>(
+    accessToken: string,
+    endpoint: string,
+    body: Record<string, unknown>
+  ) {
+    const response = await fetch(`${DROPBOX_API_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        await parseDropboxError(response, "Dropbox request failed")
+      );
+    }
+
+    return (await response.json()) as T;
+  }
+
+  private static async getMetadata(
+    accessToken: string,
+    path: string
+  ): Promise<DropboxMetadataResponse | null> {
+    const response = await fetch(`${DROPBOX_API_URL}/files/get_metadata`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ path }),
+    });
+
+    if (response.status === 409) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        await parseDropboxError(response, "Dropbox metadata request failed")
+      );
+    }
+
+    return (await response.json()) as DropboxMetadataResponse;
+  }
+
+  private static async ensureFolderPath(accessToken: string, path: string) {
+    const segments = normalizeDropboxPath(path).split("/").filter(Boolean);
+    let currentPath = "";
+
+    for (const segment of segments) {
+      currentPath = joinDropboxPath(currentPath, segment);
+      const existingFolder = await this.getMetadata(accessToken, currentPath);
+
+      if (!existingFolder) {
+        await this.rpcRequest(accessToken, "/files/create_folder_v2", {
+          path: currentPath,
+          autorename: false,
+        });
+      }
+    }
+  }
+
+  private static async downloadFileBuffer(accessToken: string, path: string) {
+    const response = await fetch(
+      "https://content.dropboxapi.com/2/files/download",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Dropbox-API-Arg": JSON.stringify({ path }),
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await parseDropboxError(response, "Dropbox file download failed")
+      );
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  private static async uploadFileBuffer(
+    accessToken: string,
+    path: string,
+    buffer: Buffer
+  ) {
+    const response = await fetch(
+      "https://content.dropboxapi.com/2/files/upload",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/octet-stream",
+          "Dropbox-API-Arg": JSON.stringify({
+            path,
+            mode: "overwrite",
+            autorename: false,
+            mute: true,
+          }),
+        },
+        body: new Uint8Array(buffer),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await parseDropboxError(response, "Dropbox file upload failed")
+      );
+    }
+  }
+
+  private static async readManifest(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string
+  ) {
+    const accessToken = await this.getAccessToken(refreshToken);
+    const folderPath = this.getDropboxGameFolderPath(
+      userPreferences,
+      shop,
+      objectId
+    );
+
+    await this.ensureFolderPath(accessToken, folderPath);
+
+    const manifestPath = joinDropboxPath(
+      folderPath,
+      CLOUD_SYNC_MANIFEST_FILE_NAME
+    );
+    const manifestMetadata = await this.getMetadata(accessToken, manifestPath);
+
+    if (!manifestMetadata) {
+      return {
+        accessToken,
+        folderPath,
+        manifestPath,
+        manifest: createEmptyCloudSyncManifest(),
+      };
+    }
+
+    const manifestBuffer = await this.downloadFileBuffer(
+      accessToken,
+      manifestPath
+    );
+    const manifest = JSON.parse(
+      manifestBuffer.toString("utf8")
+    ) as CloudSyncManifest;
+
+    return {
+      accessToken,
+      folderPath,
+      manifestPath,
+      manifest,
+    };
+  }
+
+  private static async writeManifest(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string,
+    manifest: CloudSyncManifest
+  ) {
+    const { accessToken, manifestPath } = await this.readManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId
+    );
+
+    await this.uploadFileBuffer(
+      accessToken,
+      manifestPath,
+      Buffer.from(JSON.stringify(manifest, null, 2), "utf8")
+    );
+  }
+
+  public static async listGameArtifacts(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string
+  ): Promise<GameArtifact[]> {
+    const { manifest } = await this.readManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId
+    );
+
+    return manifest.artifacts.map(
+      ({
+        fileName: _fileName,
+        homeDir: _homeDir,
+        winePrefixPath: _winePrefixPath,
+        ...artifact
+      }) => artifact
+    );
+  }
+
+  public static async uploadGameArtifact(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    params: {
+      artifact: CloudSyncStoredArtifact;
+      archiveBuffer: Buffer;
+      shop: GameShop;
+      objectId: string;
+    }
+  ) {
+    const { accessToken, folderPath, manifest } = await this.readManifest(
+      refreshToken,
+      userPreferences,
+      params.shop,
+      params.objectId
+    );
+    const archivePath = joinDropboxPath(folderPath, params.artifact.fileName);
+
+    await this.uploadFileBuffer(accessToken, archivePath, params.archiveBuffer);
+
+    manifest.artifacts = [params.artifact, ...manifest.artifacts];
+    await this.writeManifest(
+      refreshToken,
+      userPreferences,
+      params.shop,
+      params.objectId,
+      manifest
+    );
+  }
+
+  public static async downloadGameArtifact(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string,
+    artifactId: string
+  ) {
+    const { accessToken, folderPath, manifest } = await this.readManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId
+    );
+    const artifact = manifest.artifacts.find(
+      (entry) => entry.id === artifactId
+    );
+
+    if (!artifact) {
+      throw new Error("Dropbox backup could not be found");
+    }
+
+    const archiveBuffer = await this.downloadFileBuffer(
+      accessToken,
+      joinDropboxPath(folderPath, artifact.fileName)
+    );
+
+    artifact.downloadCount += 1;
+    await this.writeManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId,
+      manifest
+    );
+
+    return {
+      archiveBuffer,
+      homeDir: artifact.homeDir,
+      winePrefixPath: artifact.winePrefixPath,
+    };
+  }
+
+  public static async deleteGameArtifact(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string,
+    artifactId: string
+  ) {
+    const { accessToken, folderPath, manifest } = await this.readManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId
+    );
+    const artifact = manifest.artifacts.find(
+      (entry) => entry.id === artifactId
+    );
+
+    if (!artifact) return;
+
+    await this.rpcRequest(accessToken, "/files/delete_v2", {
+      path: joinDropboxPath(folderPath, artifact.fileName),
+    });
+
+    manifest.artifacts = manifest.artifacts.filter(
+      (entry) => entry.id !== artifactId
+    );
+
+    await this.writeManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId,
+      manifest
+    );
+  }
+
+  public static async renameGameArtifact(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string,
+    artifactId: string,
+    label: string
+  ) {
+    const { manifest } = await this.readManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId
+    );
+    const artifact = manifest.artifacts.find(
+      (entry) => entry.id === artifactId
+    );
+
+    if (!artifact) {
+      throw new Error("Dropbox backup could not be found");
+    }
+
+    artifact.label = label;
+    artifact.updatedAt = new Date().toISOString();
+
+    await this.writeManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId,
+      manifest
+    );
+  }
+
+  public static async toggleGameArtifactFreeze(
+    refreshToken: string,
+    userPreferences: UserPreferences | null,
+    shop: GameShop,
+    objectId: string,
+    artifactId: string,
+    freeze: boolean
+  ) {
+    const { manifest } = await this.readManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId
+    );
+    const artifact = manifest.artifacts.find(
+      (entry) => entry.id === artifactId
+    );
+
+    if (!artifact) {
+      throw new Error("Dropbox backup could not be found");
+    }
+
+    artifact.isFrozen = freeze;
+    artifact.updatedAt = new Date().toISOString();
+
+    await this.writeManifest(
+      refreshToken,
+      userPreferences,
+      shop,
+      objectId,
+      manifest
+    );
+  }
+
   public static async authenticate() {
     const { clientId, clientSecret, redirectUri } = getDropboxOAuthConfig();
     const state = createOAuthState();

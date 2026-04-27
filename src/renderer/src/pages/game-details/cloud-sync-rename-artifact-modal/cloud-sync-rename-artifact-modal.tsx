@@ -31,7 +31,7 @@ export function CloudSyncRenameArtifactModal({
       .max(255, t("max_length_field", { length: 255 })),
   });
 
-  const { getGameArtifacts } = useContext(cloudSyncContext);
+  const { renameGameArtifact } = useContext(cloudSyncContext);
 
   const {
     register,
@@ -58,15 +58,7 @@ export function CloudSyncRenameArtifactModal({
       try {
         if (!artifact) return;
 
-        await window.electron.hydraApi.put(
-          `/profile/games/artifacts/${artifact.id}`,
-          {
-            data: {
-              label: data.label,
-            },
-          }
-        );
-        await getGameArtifacts();
+        await renameGameArtifact(artifact.id, data.label);
 
         showSuccessToast(t("artifact_renamed"));
 
@@ -75,7 +67,7 @@ export function CloudSyncRenameArtifactModal({
         logger.error("Failed to rename artifact", err);
       }
     },
-    [artifact, getGameArtifacts, onClose, showSuccessToast, t]
+    [artifact, onClose, renameGameArtifact, showSuccessToast, t]
   );
 
   return (

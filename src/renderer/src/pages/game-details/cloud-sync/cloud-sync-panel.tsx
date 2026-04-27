@@ -27,7 +27,7 @@ import { useTranslation } from "react-i18next";
 import { AxiosProgressEvent } from "axios";
 import { formatDownloadProgress } from "@renderer/helpers";
 import { CloudSyncRenameArtifactModal } from "../cloud-sync-rename-artifact-modal/cloud-sync-rename-artifact-modal";
-import { GameArtifact } from "@types";
+import type { CloudSaveProvider, GameArtifact } from "@types";
 import { orderBy } from "lodash-es";
 import { MoreVertical } from "lucide-react";
 import { DropdownMenu } from "@renderer/components/dropdown-menu/dropdown-menu";
@@ -78,6 +78,16 @@ export function CloudSyncPanel({
 
   const userDetails = useAppSelector((state) => state.userDetails.userDetails);
   const backupsPerGameLimit = userDetails?.quirks?.backupsPerGameLimit ?? 0;
+  const activeProvider = game?.cloudSaveProvider ?? null;
+  const usesHydraCloud = activeProvider == null;
+
+  const providerLabelById: Record<CloudSaveProvider, string> = {
+    googleDrive: "Google Drive",
+    dropbox: "Dropbox",
+  };
+  const providerLabel = activeProvider
+    ? providerLabelById[activeProvider]
+    : "Hydra Cloud";
 
   const handleDeleteArtifactClick = async (gameArtifactId: string) => {
     setDeletingArtifact(true);
@@ -107,11 +117,16 @@ export function CloudSyncPanel({
   }, [objectId, shop]);
 
   useEffect(() => {
-    if (!hasActiveSubscription) return;
+    if (usesHydraCloud && !hasActiveSubscription) return;
 
     getGameBackupPreview();
     getGameArtifacts();
-  }, [getGameArtifacts, getGameBackupPreview, hasActiveSubscription]);
+  }, [
+    getGameArtifacts,
+    getGameBackupPreview,
+    hasActiveSubscription,
+    usesHydraCloud,
+  ]);
 
   const handleBackupInstallClick = async (artifactId: string) => {
     setBackupDownloadProgress(null);
@@ -134,7 +149,9 @@ export function CloudSyncPanel({
   };
 
   const hasReachedLimit =
-    backupsPerGameLimit > 0 && artifacts.length >= backupsPerGameLimit;
+    usesHydraCloud &&
+    backupsPerGameLimit > 0 &&
+    artifacts.length >= backupsPerGameLimit;
 
   const backupStateLabel = useMemo(() => {
     if (uploadingBackup) {
@@ -189,7 +206,7 @@ export function CloudSyncPanel({
   const disableActions =
     uploadingBackup || restoringBackup || deletingArtifact || freezingArtifact;
 
-  if (!hasActiveSubscription) {
+  if (usesHydraCloud && !hasActiveSubscription) {
     return (
       <div className="cloud-sync-panel__upgrade">
         <p>{tHydraCloud("hydra_cloud_feature_found")}</p>
@@ -219,12 +236,14 @@ export function CloudSyncPanel({
             <div className="cloud-sync-panel__automatic-sync-label">
               {t("enable_automatic_cloud_sync")}
               <span className="cloud-sync-panel__automatic-sync-badge">
-                Hydra Cloud
+                {providerLabel}
               </span>
             </div>
           }
           checked={automaticCloudSync}
-          disabled={!hasActiveSubscription || !game?.executablePath}
+          disabled={
+            (usesHydraCloud && !hasActiveSubscription) || !game?.executablePath
+          }
           onChange={onToggleAutomaticCloudSync}
         />
       </div>

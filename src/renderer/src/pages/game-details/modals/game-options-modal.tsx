@@ -4,6 +4,7 @@ import { Modal } from "@renderer/components";
 import { formatBytes } from "@shared";
 
 import type {
+  CloudSaveProvider,
   CreateSteamShortcutOptions,
   Game,
   LibraryGame,
@@ -30,6 +31,7 @@ import {
   FileDirectoryIcon,
   GearIcon,
   ImageIcon,
+  SyncIcon,
 } from "@primer/octicons-react";
 import { Wrench } from "lucide-react";
 import { GameAssetsSettings } from "./game-assets-settings";
@@ -44,6 +46,7 @@ import { CompatibilitySettingsSection } from "./game-options-modal/compatibility
 import { DownloadsSettingsSection } from "./game-options-modal/downloads-section";
 import { DangerZoneSection } from "./game-options-modal/danger-zone-section";
 import { HydraCloudSettingsSection } from "./game-options-modal/hydra-cloud-section";
+import { CloudSavesSettingsSection } from "./game-options-modal/cloud-saves-section";
 import type { GameSettingsCategoryId } from "./game-options-modal/types";
 import { CreateSteamShortcutModal } from "./create-steam-shortcut-modal";
 
@@ -98,6 +101,8 @@ export function GameOptionsModal({
   const [automaticCloudSync, setAutomaticCloudSync] = useState(
     game.automaticCloudSync ?? false
   );
+  const [selectedCloudSaveProvider, setSelectedCloudSaveProvider] =
+    useState<CloudSaveProvider | null>(game.cloudSaveProvider ?? null);
   const [creatingSteamShortcut, setCreatingSteamShortcut] = useState(false);
   const [saveFolderPath, setSaveFolderPath] = useState<string | null>(null);
   const [loadingSaveFolder, setLoadingSaveFolder] = useState(false);
@@ -170,6 +175,9 @@ export function GameOptionsModal({
   useEffect(() => {
     setGameTitle(game.title ?? "");
   }, [game.title]);
+  useEffect(() => {
+    setSelectedCloudSaveProvider(game.cloudSaveProvider ?? null);
+  }, [game.cloudSaveProvider]);
   useEffect(() => {
     setSelectedProtonPath(game.protonPath ?? "");
   }, [game.protonPath]);
@@ -641,6 +649,11 @@ export function GameOptionsModal({
         label: t("settings_category_hydra_cloud"),
         icon: <CloudIcon size={16} />,
       },
+      {
+        id: "cloud_saves" as const,
+        label: "Cloud Saves",
+        icon: <SyncIcon size={16} />,
+      },
       ...(shouldShowWinePrefixConfiguration
         ? [
             {
@@ -708,6 +721,31 @@ export function GameOptionsModal({
         { ...gameData, automaticCloudSync: event.target.checked },
         "games"
       );
+    updateGame();
+  };
+
+  const handleChangeCloudSaveProvider = async (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const nextProviderValue = event.target.value || null;
+    const nextProvider = nextProviderValue as CloudSaveProvider | null;
+
+    setSelectedCloudSaveProvider(nextProvider);
+
+    const gameKey = getGameKey(game.shop, game.objectId);
+    const gameData = (await levelDBService.get(
+      gameKey,
+      "games"
+    )) as Game | null;
+
+    if (gameData) {
+      await levelDBService.put(
+        gameKey,
+        { ...gameData, cloudSaveProvider: nextProvider },
+        "games"
+      );
+    }
+
     updateGame();
   };
 
@@ -854,6 +892,13 @@ export function GameOptionsModal({
                 game={game}
                 automaticCloudSync={automaticCloudSync}
                 onToggleAutomaticCloudSync={handleToggleAutomaticCloudSync}
+              />
+            )}
+            {selectedCategory === "cloud_saves" && (
+              <CloudSavesSettingsSection
+                selectedCloudSaveProvider={selectedCloudSaveProvider}
+                userPreferences={userPreferences}
+                onChangeCloudSaveProvider={handleChangeCloudSaveProvider}
               />
             )}
             {selectedCategory === "compatibility" &&
