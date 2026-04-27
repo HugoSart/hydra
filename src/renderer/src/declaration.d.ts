@@ -272,12 +272,14 @@ declare global {
     ) => Promise<{
       refreshToken: string;
       accountEmail: string;
+      clientSecret: string;
     }>;
     authenticateDropbox: (
       credentials: CloudProviderAuthCredentials
     ) => Promise<{
       refreshToken: string;
       accountEmail: string;
+      clientSecret: string;
     }>;
     getUserPreferences: () => Promise<UserPreferences | null>;
     updateUserPreferences: (

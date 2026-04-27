@@ -49,6 +49,7 @@ const validateCloudPath = (providerName: string, value: string) => {
 type CloudProviderConnection = {
   refreshToken: string;
   accountEmail: string;
+  clientSecret: string;
 };
 
 type CloudProviderCredentialErrors = {
@@ -95,8 +96,6 @@ function CloudProviderSection({
   const [isEditingCustomPath, setIsEditingCustomPath] = useState(false);
   const savedClientId =
     (userPreferences?.[provider.clientIdKey] as string | null) ?? "";
-  const savedClientSecret =
-    (userPreferences?.[provider.clientSecretKey] as string | null) ?? "";
   const isConnected = !!accountEmail;
   const clientIdPreview = savedClientId.slice(0, 4);
 
@@ -107,10 +106,10 @@ function CloudProviderSection({
   }, [provider.accountEmailKey, userPreferences]);
 
   useEffect(() => {
-    setClientId(savedClientId);
-    setClientSecret(savedClientSecret);
+    setClientId(isConnected ? savedClientId : "");
+    setClientSecret("");
     setCredentialErrors({});
-  }, [savedClientId, savedClientSecret]);
+  }, [isConnected, savedClientId]);
 
   useEffect(() => {
     const nextStorageMode = getExternalCloudProviderStorageMode(
@@ -156,13 +155,13 @@ function CloudProviderSection({
 
       await updateUserPreferences({
         [provider.clientIdKey]: credentials.clientId,
-        [provider.clientSecretKey]: credentials.clientSecret,
+        [provider.clientSecretKey]: result.clientSecret,
         [provider.refreshTokenKey]: result.refreshToken,
         [provider.accountEmailKey]: result.accountEmail,
       } as Partial<UserPreferences>);
 
       setClientId(credentials.clientId);
-      setClientSecret(credentials.clientSecret);
+      setClientSecret("");
       setCredentialErrors({});
       setAccountEmail(result.accountEmail);
       showSuccessToast(`${provider.label} connected`, result.accountEmail);
@@ -202,10 +201,14 @@ function CloudProviderSection({
 
     try {
       await updateUserPreferences({
+        [provider.clientIdKey]: null,
+        [provider.clientSecretKey]: null,
         [provider.refreshTokenKey]: null,
         [provider.accountEmailKey]: null,
       } as Partial<UserPreferences>);
 
+      setClientId("");
+      setClientSecret("");
       setAccountEmail(null);
       showSuccessToast(`${provider.label} disconnected`);
     } catch (error) {
