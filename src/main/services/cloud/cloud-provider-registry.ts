@@ -4,8 +4,8 @@ import {
 } from "@shared";
 import type { CloudSaveProvider, UserPreferences } from "@types";
 import type { CloudProviderDefinition } from "./cloud-provider-strategy";
-import { dropboxProviderStrategy } from "./dropbox";
-import { googleDriveProviderStrategy } from "./google-drive";
+import { dropboxProviderStrategy } from "./providers/dropbox";
+import { googleDriveProviderStrategy } from "./providers/google-drive";
 
 const strategiesByProviderId = {
   googleDrive: googleDriveProviderStrategy,

@@ -4,14 +4,17 @@ import {
   ChevronRightIcon,
   LinkExternalIcon,
 } from "@primer/octicons-react";
+import {
+  EXTERNAL_CLOUD_PROVIDER_METADATA,
+  getExternalCloudProviderStorageMode,
+} from "@shared";
+import type { CloudProviderMetadata } from "@shared";
 import { Button, CheckboxField, Link, TextField } from "@renderer/components";
 import { settingsContext } from "@renderer/context";
 import { useAppSelector, useToast } from "@renderer/hooks";
 import type { CloudStorageMode, UserPreferences } from "@types";
 import "./settings-cloud.scss";
 
-const GOOGLE_DRIVE_URL = "https://drive.google.com";
-const DROPBOX_URL = "https://www.dropbox.com";
 const DEFAULT_CLOUD_STORAGE_MODE: CloudStorageMode = "appData";
 
 const normalizeCloudPath = (value: string) =>
@@ -45,21 +48,8 @@ type CloudProviderConnection = {
   accountEmail: string;
 };
 
-type CloudProviderPreferenceKeys = {
-  refreshToken: "googleDriveRefreshToken" | "dropboxRefreshToken";
-  accountEmail: "googleDriveAccountEmail" | "dropboxAccountEmail";
-  storageMode: "googleDriveStorageMode" | "dropboxStorageMode";
-  customPath: "googleDriveCustomPath" | "dropboxCustomPath";
-};
-
 interface CloudProviderSectionProps {
-  providerName: string;
-  providerUrl: string;
-  providerDescription: string;
-  appStorageDescription: string;
-  pathLabel: string;
-  pathPlaceholder: string;
-  preferenceKeys: CloudProviderPreferenceKeys;
+  provider: CloudProviderMetadata;
   userPreferences: UserPreferences | null;
   updateUserPreferences: (
     preferences: Partial<UserPreferences>
@@ -70,13 +60,7 @@ interface CloudProviderSectionProps {
 }
 
 function CloudProviderSection({
-  providerName,
-  providerUrl,
-  providerDescription,
-  appStorageDescription,
-  pathLabel,
-  pathPlaceholder,
-  preferenceKeys,
+  provider,
   userPreferences,
   updateUserPreferences,
   authenticate,
@@ -96,22 +80,23 @@ function CloudProviderSection({
 
   useEffect(() => {
     const nextAccountEmail =
-      (userPreferences?.[preferenceKeys.accountEmail] as string | null) ?? null;
+      (userPreferences?.[provider.accountEmailKey] as string | null) ?? null;
     setAccountEmail(nextAccountEmail);
-  }, [preferenceKeys.accountEmail, userPreferences]);
+  }, [provider.accountEmailKey, userPreferences]);
 
   useEffect(() => {
-    const nextStorageMode =
-      (userPreferences?.[preferenceKeys.storageMode] as CloudStorageMode) ??
-      DEFAULT_CLOUD_STORAGE_MODE;
+    const nextStorageMode = getExternalCloudProviderStorageMode(
+      provider,
+      userPreferences
+    );
     const nextCustomPath =
-      (userPreferences?.[preferenceKeys.customPath] as string | null) ?? null;
+      (userPreferences?.[provider.customPathKey] as string | null) ?? null;
 
     setStorageMode(nextStorageMode);
     setCustomPath(nextCustomPath);
     setDraftCustomPath(nextCustomPath ?? "");
     setCustomPathError(null);
-  }, [preferenceKeys.customPath, preferenceKeys.storageMode, userPreferences]);
+  }, [provider, userPreferences]);
 
   const handleConnect = async () => {
     if (isLoading) return;
@@ -122,15 +107,15 @@ function CloudProviderSection({
       const result = await authenticate();
 
       await updateUserPreferences({
-        [preferenceKeys.refreshToken]: result.refreshToken,
-        [preferenceKeys.accountEmail]: result.accountEmail,
+        [provider.refreshTokenKey]: result.refreshToken,
+        [provider.accountEmailKey]: result.accountEmail,
       } as Partial<UserPreferences>);
 
       setAccountEmail(result.accountEmail);
-      showSuccessToast(`${providerName} connected`, result.accountEmail);
+      showSuccessToast(`${provider.label} connected`, result.accountEmail);
     } catch (error) {
       showErrorToast(
-        `${providerName} connection failed`,
+        `${provider.label} connection failed`,
         error instanceof Error ? error.message : undefined
       );
     } finally {
@@ -145,15 +130,15 @@ function CloudProviderSection({
 
     try {
       await updateUserPreferences({
-        [preferenceKeys.refreshToken]: null,
-        [preferenceKeys.accountEmail]: null,
+        [provider.refreshTokenKey]: null,
+        [provider.accountEmailKey]: null,
       } as Partial<UserPreferences>);
 
       setAccountEmail(null);
-      showSuccessToast(`${providerName} disconnected`);
+      showSuccessToast(`${provider.label} disconnected`);
     } catch (error) {
       showErrorToast(
-        `Could not disconnect ${providerName}`,
+        `Could not disconnect ${provider.label}`,
         error instanceof Error ? error.message : undefined
       );
     } finally {
@@ -165,7 +150,7 @@ function CloudProviderSection({
     setStorageMode(nextMode);
 
     await updateUserPreferences({
-      [preferenceKeys.storageMode]: nextMode,
+      [provider.storageModeKey]: nextMode,
     } as Partial<UserPreferences>);
   };
 
@@ -187,7 +172,7 @@ function CloudProviderSection({
   };
 
   const handleSaveCustomPath = async () => {
-    const validationError = validateCloudPath(providerName, draftCustomPath);
+    const validationError = validateCloudPath(provider.label, draftCustomPath);
 
     if (validationError) {
       setCustomPathError(validationError);
@@ -200,16 +185,16 @@ function CloudProviderSection({
 
     try {
       await updateUserPreferences({
-        [preferenceKeys.customPath]: normalizedPath,
+        [provider.customPathKey]: normalizedPath,
       } as Partial<UserPreferences>);
 
       setCustomPath(normalizedPath);
       setDraftCustomPath(normalizedPath);
       setCustomPathError(null);
-      showSuccessToast(`${providerName} path saved`, normalizedPath);
+      showSuccessToast(`${provider.label} path saved`, normalizedPath);
     } catch (error) {
       showErrorToast(
-        `Could not save ${providerName} path`,
+        `Could not save ${provider.label} path`,
         error instanceof Error ? error.message : undefined
       );
     } finally {
@@ -234,8 +219,8 @@ function CloudProviderSection({
           onClick={() => setIsCollapsed((value) => !value)}
           aria-label={
             isCollapsed
-              ? `Expand ${providerName} section`
-              : `Collapse ${providerName} section`
+              ? `Expand ${provider.label} section`
+              : `Collapse ${provider.label} section`
           }
         >
           <span
@@ -246,7 +231,7 @@ function CloudProviderSection({
             <ChevronRightIcon size={16} />
           </span>
         </button>
-        <h3 className="settings-cloud__section-title">{providerName}</h3>
+        <h3 className="settings-cloud__section-title">{provider.label}</h3>
         {accountEmail && (
           <CheckCircleFillIcon
             size={16}
@@ -267,11 +252,14 @@ function CloudProviderSection({
           ) : (
             <div className="settings-cloud__description-container">
               <p className="settings-cloud__provider-description">
-                {providerDescription}
+                {provider.providerDescription}
               </p>
-              <Link to={providerUrl} className="settings-cloud__create-account">
+              <Link
+                to={provider.accountUrl}
+                className="settings-cloud__create-account"
+              >
                 <LinkExternalIcon />
-                Click here if you don&apos;t have a {providerName} account yet
+                Click here if you don&apos;t have a {provider.label} account yet
               </Link>
             </div>
           )}
@@ -284,23 +272,23 @@ function CloudProviderSection({
               label={
                 <span className="settings-cloud__checkbox-label">
                   <strong>Use custom folder</strong>
-                  <small>{appStorageDescription}</small>
+                  <small>{provider.appStorageDescription}</small>
                 </span>
               }
             />
 
             {storageMode === "customFolder" && (
               <TextField
-                label={pathLabel}
+                label={provider.pathLabel}
                 value={draftCustomPath}
-                placeholder={pathPlaceholder}
+                placeholder={provider.pathPlaceholder}
                 onChange={handleCustomPathChange}
                 disabled={isLoading || isSavingCustomPath}
                 error={customPathError}
                 hint={
                   customPathError
                     ? null
-                    : `Use folder names separated by /. Example: ${pathPlaceholder}`
+                    : `Use folder names separated by /. Example: ${provider.pathPlaceholder}`
                 }
                 rightContent={
                   <Button
@@ -337,7 +325,7 @@ function CloudProviderSection({
                 disabled={isLoading}
                 onClick={handleConnect}
               >
-                {isLoading ? "Connecting..." : `Connect ${providerName}`}
+                {isLoading ? "Connecting..." : `Connect ${provider.label}`}
               </Button>
             )}
           </div>
@@ -361,45 +349,17 @@ export function SettingsCloud() {
         across devices.
       </p>
 
-      <CloudProviderSection
-        providerName="Google Drive"
-        providerUrl={GOOGLE_DRIVE_URL}
-        providerDescription="Google Drive stores your save backups in your Google account. You can keep them in Hydra's private app storage or point sync to a custom Drive path."
-        appStorageDescription="Store backups in a Google Drive folder you choose. When disabled, Hydra uses its private app storage."
-        pathLabel="Google Drive path"
-        pathPlaceholder="Hydra/Backups"
-        preferenceKeys={{
-          refreshToken: "googleDriveRefreshToken",
-          accountEmail: "googleDriveAccountEmail",
-          storageMode: "googleDriveStorageMode",
-          customPath: "googleDriveCustomPath",
-        }}
-        userPreferences={userPreferences}
-        updateUserPreferences={updateUserPreferences}
-        authenticate={() => window.electron.authenticateGoogleDrive()}
-        showSuccessToast={showSuccessToast}
-        showErrorToast={showErrorToast}
-      />
-
-      <CloudProviderSection
-        providerName="Dropbox"
-        providerUrl={DROPBOX_URL}
-        providerDescription="Dropbox stores your save backups in your Dropbox account. You can keep them in Hydra's default Dropbox location or point sync to a custom Dropbox path."
-        appStorageDescription="Store backups in a Dropbox folder you choose. When disabled, Hydra uses its default Dropbox location."
-        pathLabel="Dropbox path"
-        pathPlaceholder="Hydra/Backups"
-        preferenceKeys={{
-          refreshToken: "dropboxRefreshToken",
-          accountEmail: "dropboxAccountEmail",
-          storageMode: "dropboxStorageMode",
-          customPath: "dropboxCustomPath",
-        }}
-        userPreferences={userPreferences}
-        updateUserPreferences={updateUserPreferences}
-        authenticate={() => window.electron.authenticateDropbox()}
-        showSuccessToast={showSuccessToast}
-        showErrorToast={showErrorToast}
-      />
+      {EXTERNAL_CLOUD_PROVIDER_METADATA.map((provider) => (
+        <CloudProviderSection
+          key={provider.id}
+          provider={provider}
+          userPreferences={userPreferences}
+          updateUserPreferences={updateUserPreferences}
+          authenticate={() => window.electron[provider.authenticateMethod]()}
+          showSuccessToast={showSuccessToast}
+          showErrorToast={showErrorToast}
+        />
+      ))}
     </div>
   );
 }

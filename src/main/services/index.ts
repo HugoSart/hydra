@@ -24,5 +24,5 @@ export * from "./download-sources-checker";
 export * from "./notifications/local-notifications";
 export * from "./power-save-blocker";
 export * from "./native-addon";
-export * from "./cloud/google-drive";
-export * from "./cloud/dropbox";
+export * from "./cloud/providers/google-drive";
+export * from "./cloud/providers/dropbox";
