@@ -77,6 +77,7 @@ function CloudProviderSection({
   const [draftCustomPath, setDraftCustomPath] = useState("");
   const [customPathError, setCustomPathError] = useState<string | null>(null);
   const [isSavingCustomPath, setIsSavingCustomPath] = useState(false);
+  const [isEditingCustomPath, setIsEditingCustomPath] = useState(false);
 
   useEffect(() => {
     const nextAccountEmail =
@@ -96,6 +97,7 @@ function CloudProviderSection({
     setCustomPath(nextCustomPath);
     setDraftCustomPath(nextCustomPath ?? "");
     setCustomPathError(null);
+    setIsEditingCustomPath(false);
   }, [provider, userPreferences]);
 
   const handleConnect = async () => {
@@ -181,6 +183,13 @@ function CloudProviderSection({
 
     const normalizedPath = normalizeCloudPath(draftCustomPath);
 
+    if (normalizedPath === (customPath ?? "")) {
+      setDraftCustomPath(normalizedPath);
+      setCustomPathError(null);
+      setIsEditingCustomPath(false);
+      return;
+    }
+
     setIsSavingCustomPath(true);
 
     try {
@@ -191,6 +200,7 @@ function CloudProviderSection({
       setCustomPath(normalizedPath);
       setDraftCustomPath(normalizedPath);
       setCustomPathError(null);
+      setIsEditingCustomPath(false);
       showSuccessToast(`${provider.label} path saved`, normalizedPath);
     } catch (error) {
       showErrorToast(
@@ -202,9 +212,15 @@ function CloudProviderSection({
     }
   };
 
-  const normalizedDraftCustomPath = normalizeCloudPath(draftCustomPath);
-  const hasPendingCustomPathChanges =
-    normalizedDraftCustomPath !== (customPath ?? "");
+  const handleCustomPathAction = async () => {
+    if (!isEditingCustomPath) {
+      setIsEditingCustomPath(true);
+      setCustomPathError(null);
+      return;
+    }
+
+    await handleSaveCustomPath();
+  };
 
   return (
     <div
@@ -283,7 +299,10 @@ function CloudProviderSection({
                 value={draftCustomPath}
                 placeholder={provider.pathPlaceholder}
                 onChange={handleCustomPathChange}
-                disabled={isLoading || isSavingCustomPath}
+                readOnly={!isEditingCustomPath}
+                disabled={
+                  isLoading || isSavingCustomPath || !isEditingCustomPath
+                }
                 error={customPathError}
                 hint={
                   customPathError
@@ -294,15 +313,18 @@ function CloudProviderSection({
                   <Button
                     type="button"
                     theme="outline"
-                    onClick={handleSaveCustomPath}
+                    onClick={handleCustomPathAction}
                     disabled={
                       isLoading ||
                       isSavingCustomPath ||
-                      !draftCustomPath.trim() ||
-                      !hasPendingCustomPathChanges
+                      (isEditingCustomPath && !draftCustomPath.trim())
                     }
                   >
-                    {isSavingCustomPath ? "Saving..." : "Save"}
+                    {isSavingCustomPath
+                      ? "Saving..."
+                      : isEditingCustomPath
+                        ? "Save"
+                        : "Edit"}
                   </Button>
                 }
               />

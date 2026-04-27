@@ -37,6 +37,16 @@
     &--focused {
       border-color: #dadbe1;
     }
+
+    &:has(input:disabled) {
+      background-color: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
+      opacity: 0.65;
+
+      &:hover {
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+    }
   }
 
   &__text-field-input {
@@ -57,6 +67,12 @@
 
     &--read-only {
       text-overflow: inherit;
+    }
+
+    &:disabled {
+      color: globals.$muted-color;
+      cursor: not-allowed;
+      -webkit-text-fill-color: globals.$muted-color;
     }
   }
 
