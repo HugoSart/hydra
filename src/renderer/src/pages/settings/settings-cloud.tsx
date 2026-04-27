@@ -8,7 +8,10 @@ import {
   EXTERNAL_CLOUD_PROVIDER_METADATA,
   getExternalCloudProviderStorageMode,
 } from "@shared";
-import type { CloudProviderMetadata } from "@shared";
+import type {
+  CloudProviderAuthCredentials,
+  CloudProviderMetadata,
+} from "@shared";
 import { Button, CheckboxField, Link, TextField } from "@renderer/components";
 import { settingsContext } from "@renderer/context";
 import { useAppSelector, useToast } from "@renderer/hooks";
@@ -48,13 +51,20 @@ type CloudProviderConnection = {
   accountEmail: string;
 };
 
+type CloudProviderCredentialErrors = {
+  clientId?: string;
+  clientSecret?: string;
+};
+
 interface CloudProviderSectionProps {
   provider: CloudProviderMetadata;
   userPreferences: UserPreferences | null;
   updateUserPreferences: (
     preferences: Partial<UserPreferences>
   ) => Promise<void>;
-  authenticate: () => Promise<CloudProviderConnection>;
+  authenticate: (
+    credentials: CloudProviderAuthCredentials
+  ) => Promise<CloudProviderConnection>;
   showSuccessToast: (title: string, message?: string) => void;
   showErrorToast: (title: string, message?: string) => void;
 }
@@ -68,8 +78,13 @@ function CloudProviderSection({
   showErrorToast,
 }: Readonly<CloudProviderSectionProps>) {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isAppSetupCollapsed, setIsAppSetupCollapsed] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const [credentialErrors, setCredentialErrors] =
+    useState<CloudProviderCredentialErrors>({});
   const [storageMode, setStorageMode] = useState<CloudStorageMode>(
     DEFAULT_CLOUD_STORAGE_MODE
   );
@@ -78,12 +93,24 @@ function CloudProviderSection({
   const [customPathError, setCustomPathError] = useState<string | null>(null);
   const [isSavingCustomPath, setIsSavingCustomPath] = useState(false);
   const [isEditingCustomPath, setIsEditingCustomPath] = useState(false);
+  const savedClientId =
+    (userPreferences?.[provider.clientIdKey] as string | null) ?? "";
+  const savedClientSecret =
+    (userPreferences?.[provider.clientSecretKey] as string | null) ?? "";
+  const isConnected = !!accountEmail;
+  const clientIdPreview = savedClientId.slice(0, 4);
 
   useEffect(() => {
     const nextAccountEmail =
       (userPreferences?.[provider.accountEmailKey] as string | null) ?? null;
     setAccountEmail(nextAccountEmail);
   }, [provider.accountEmailKey, userPreferences]);
+
+  useEffect(() => {
+    setClientId(savedClientId);
+    setClientSecret(savedClientSecret);
+    setCredentialErrors({});
+  }, [savedClientId, savedClientSecret]);
 
   useEffect(() => {
     const nextStorageMode = getExternalCloudProviderStorageMode(
@@ -103,16 +130,40 @@ function CloudProviderSection({
   const handleConnect = async () => {
     if (isLoading) return;
 
+    const credentials = {
+      clientId: clientId.trim(),
+      clientSecret: clientSecret.trim(),
+    };
+    const nextCredentialErrors: CloudProviderCredentialErrors = {};
+
+    if (!credentials.clientId) {
+      nextCredentialErrors.clientId = `Enter your ${provider.label} ${provider.clientIdLabel.toLowerCase()}.`;
+    }
+
+    if (!credentials.clientSecret) {
+      nextCredentialErrors.clientSecret = `Enter your ${provider.label} ${provider.clientSecretLabel.toLowerCase()}.`;
+    }
+
+    if (nextCredentialErrors.clientId || nextCredentialErrors.clientSecret) {
+      setCredentialErrors(nextCredentialErrors);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const result = await authenticate();
+      const result = await authenticate(credentials);
 
       await updateUserPreferences({
+        [provider.clientIdKey]: credentials.clientId,
+        [provider.clientSecretKey]: credentials.clientSecret,
         [provider.refreshTokenKey]: result.refreshToken,
         [provider.accountEmailKey]: result.accountEmail,
       } as Partial<UserPreferences>);
 
+      setClientId(credentials.clientId);
+      setClientSecret(credentials.clientSecret);
+      setCredentialErrors({});
       setAccountEmail(result.accountEmail);
       showSuccessToast(`${provider.label} connected`, result.accountEmail);
     } catch (error) {
@@ -122,6 +173,25 @@ function CloudProviderSection({
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleClientIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setClientId(event.target.value);
+    if (credentialErrors.clientId) {
+      setCredentialErrors((errors) => ({ ...errors, clientId: undefined }));
+    }
+  };
+
+  const handleClientSecretChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setClientSecret(event.target.value);
+    if (credentialErrors.clientSecret) {
+      setCredentialErrors((errors) => ({
+        ...errors,
+        clientSecret: undefined,
+      }));
     }
   };
 
@@ -263,7 +333,10 @@ function CloudProviderSection({
               <span className="settings-cloud__account-label">
                 Connected as
               </span>
-              <strong>{accountEmail}</strong>
+              <strong>
+                {accountEmail}
+                {clientIdPreview ? ` (${clientIdPreview})` : ""}
+              </strong>
             </div>
           ) : (
             <div className="settings-cloud__description-container">
@@ -277,6 +350,75 @@ function CloudProviderSection({
                 <LinkExternalIcon />
                 Click here if you don&apos;t have a {provider.label} account yet
               </Link>
+            </div>
+          )}
+
+          {!isConnected && (
+            <div className="settings-cloud__setup-section">
+              <button
+                type="button"
+                className="settings-cloud__setup-header"
+                onClick={() => setIsAppSetupCollapsed((value) => !value)}
+                aria-label={
+                  isAppSetupCollapsed
+                    ? `Expand ${provider.label} app setup instructions`
+                    : `Collapse ${provider.label} app setup instructions`
+                }
+              >
+                <span
+                  className={`settings-cloud__collapse-icon ${
+                    isAppSetupCollapsed
+                      ? ""
+                      : "settings-cloud__collapse-icon--expanded"
+                  }`}
+                >
+                  <ChevronRightIcon size={16} />
+                </span>
+                <span>How to get client ID and secret</span>
+              </button>
+
+              {!isAppSetupCollapsed && (
+                <div className="settings-cloud__app-setup">
+                  <p className="settings-cloud__provider-description">
+                    {provider.appSetupDescription}
+                  </p>
+                  <Link
+                    to={provider.appSetupUrl}
+                    className="settings-cloud__create-account"
+                  >
+                    <LinkExternalIcon />
+                    {provider.appSetupLinkLabel}
+                  </Link>
+                  <div className="settings-cloud__permissions">
+                    <span>Required permissions</span>
+                    <ul>
+                      {provider.requiredPermissions.map((permission) => (
+                        <li key={permission}>{permission}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isConnected && (
+            <div className="settings-cloud__credential-fields">
+              <TextField
+                label={provider.clientIdLabel}
+                value={clientId}
+                onChange={handleClientIdChange}
+                disabled={isLoading}
+                error={credentialErrors.clientId}
+              />
+              <TextField
+                label={provider.clientSecretLabel}
+                value={clientSecret}
+                onChange={handleClientSecretChange}
+                type="password"
+                disabled={isLoading}
+                error={credentialErrors.clientSecret}
+              />
             </div>
           )}
 
@@ -377,7 +519,9 @@ export function SettingsCloud() {
           provider={provider}
           userPreferences={userPreferences}
           updateUserPreferences={updateUserPreferences}
-          authenticate={() => window.electron[provider.authenticateMethod]()}
+          authenticate={(credentials) =>
+            window.electron[provider.authenticateMethod](credentials)
+          }
           showSuccessToast={showSuccessToast}
           showErrorToast={showErrorToast}
         />

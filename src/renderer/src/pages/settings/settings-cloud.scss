@@ -18,6 +18,23 @@
     gap: globals.$spacing-unit;
   }
 
+  &__setup-section,
+  &__app-setup {
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
+  }
+
+  &__setup-header {
+    display: flex;
+    align-items: center;
+    gap: calc(globals.$spacing-unit * 0.75);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    width: fit-content;
+  }
+
   &__create-account {
     display: flex;
     align-items: center;
@@ -105,10 +122,35 @@
     justify-content: flex-start;
   }
 
+  &__credential-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: globals.$spacing-unit;
+  }
+
   &__storage-options {
     display: flex;
     flex-direction: column;
     gap: globals.$spacing-unit;
+  }
+
+  &__permissions {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 0.5);
+    color: var(--text-secondary);
+    line-height: 1.5;
+
+    span {
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: calc(globals.$spacing-unit * 2);
+    }
   }
 
   &__checkbox-label {

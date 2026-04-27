@@ -120,10 +120,14 @@ export interface UserPreferences {
   premiumizeApiToken?: string | null;
   allDebridApiToken?: string | null;
   torBoxApiToken?: string | null;
+  googleDriveClientId?: string | null;
+  googleDriveClientSecret?: string | null;
   googleDriveRefreshToken?: string | null;
   googleDriveAccountEmail?: string | null;
   googleDriveStorageMode?: CloudStorageMode;
   googleDriveCustomPath?: string | null;
+  dropboxAppKey?: string | null;
+  dropboxAppSecret?: string | null;
   dropboxRefreshToken?: string | null;
   dropboxAccountEmail?: string | null;
   dropboxStorageMode?: CloudStorageMode;

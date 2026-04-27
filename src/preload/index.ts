@@ -23,7 +23,7 @@ import type {
   ProtonVersion,
   TorrentFilesResponse,
 } from "@types";
-import type { AuthPage } from "@shared";
+import type { AuthPage, CloudProviderAuthCredentials } from "@shared";
 import type { AxiosProgressEvent } from "axios";
 
 contextBridge.exposeInMainWorld("electron", {
@@ -120,8 +120,10 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("authenticateAllDebrid", apiToken),
   authenticateTorBox: (apiToken: string) =>
     ipcRenderer.invoke("authenticateTorBox", apiToken),
-  authenticateGoogleDrive: () => ipcRenderer.invoke("authenticateGoogleDrive"),
-  authenticateDropbox: () => ipcRenderer.invoke("authenticateDropbox"),
+  authenticateGoogleDrive: (credentials: CloudProviderAuthCredentials) =>
+    ipcRenderer.invoke("authenticateGoogleDrive", credentials),
+  authenticateDropbox: (credentials: CloudProviderAuthCredentials) =>
+    ipcRenderer.invoke("authenticateDropbox", credentials),
 
   /* Download sources */
   addDownloadSource: (url: string) =>

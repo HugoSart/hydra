@@ -1,4 +1,4 @@
-import type { AuthPage } from "@shared";
+import type { AuthPage, CloudProviderAuthCredentials } from "@shared";
 import type {
   AppUpdaterEvent,
   GameShop,
@@ -267,11 +267,15 @@ declare global {
     authenticatePremiumize: (apiToken: string) => Promise<PremiumizeUser>;
     authenticateAllDebrid: (apiToken: string) => Promise<AllDebridUser>;
     authenticateTorBox: (apiToken: string) => Promise<TorBoxUser>;
-    authenticateGoogleDrive: () => Promise<{
+    authenticateGoogleDrive: (
+      credentials: CloudProviderAuthCredentials
+    ) => Promise<{
       refreshToken: string;
       accountEmail: string;
     }>;
-    authenticateDropbox: () => Promise<{
+    authenticateDropbox: (
+      credentials: CloudProviderAuthCredentials
+    ) => Promise<{
       refreshToken: string;
       accountEmail: string;
     }>;
