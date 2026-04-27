@@ -1,13 +1,15 @@
 import { URL } from "node:url";
-import type { GameArtifact, GameShop, UserPreferences } from "@types";
+import fs from "node:fs";
+import type { UserPreferences } from "@types";
 import {
   CLOUD_SYNC_MANIFEST_FILE_NAME,
   DEFAULT_EXTERNAL_CLOUD_ROOT_FOLDER,
   type CloudSyncManifest,
-  type CloudSyncStoredArtifact,
   createEmptyCloudSyncManifest,
   getCloudSyncGameFolderName,
 } from "./cloud-sync-manifest";
+import type { CloudProviderContext } from "./cloud-provider-strategy";
+import { ManifestCloudProviderStrategy } from "./manifest-cloud-provider-strategy";
 import {
   createOAuthState,
   waitForOAuthCallback,
@@ -204,19 +206,15 @@ const getDropboxAccount = async (accessToken: string) => {
   return (await accountResponse.json()) as DropboxAccountResponse;
 };
 
-export class DropboxService {
-  private static getDropboxGameFolderPath(
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string
-  ) {
+class DropboxProviderStrategy extends ManifestCloudProviderStrategy {
+  private getDropboxGameFolderPath(context: CloudProviderContext) {
     return joinDropboxPath(
-      ...getDropboxBasePathSegments(userPreferences),
-      getCloudSyncGameFolderName(shop, objectId)
+      ...getDropboxBasePathSegments(context.userPreferences),
+      getCloudSyncGameFolderName(context.shop, context.objectId)
     );
   }
 
-  private static async getAccessToken(refreshToken: string) {
+  private async getAccessToken(refreshToken: string) {
     const { clientId, clientSecret } = getDropboxOAuthConfig();
 
     const tokenResponse = await fetch(DROPBOX_TOKEN_URL, {
@@ -250,7 +248,7 @@ export class DropboxService {
     return tokens.access_token;
   }
 
-  private static async rpcRequest<T>(
+  private async rpcRequest<T>(
     accessToken: string,
     endpoint: string,
     body: Record<string, unknown>
@@ -273,7 +271,7 @@ export class DropboxService {
     return (await response.json()) as T;
   }
 
-  private static async getMetadata(
+  private async getMetadata(
     accessToken: string,
     path: string
   ): Promise<DropboxMetadataResponse | null> {
@@ -299,7 +297,7 @@ export class DropboxService {
     return (await response.json()) as DropboxMetadataResponse;
   }
 
-  private static async ensureFolderPath(accessToken: string, path: string) {
+  private async ensureFolderPath(accessToken: string, path: string) {
     const segments = normalizeDropboxPath(path).split("/").filter(Boolean);
     let currentPath = "";
 
@@ -316,7 +314,7 @@ export class DropboxService {
     }
   }
 
-  private static async downloadFileBuffer(accessToken: string, path: string) {
+  private async downloadFileBuffer(accessToken: string, path: string) {
     const response = await fetch(
       "https://content.dropboxapi.com/2/files/download",
       {
@@ -337,7 +335,7 @@ export class DropboxService {
     return Buffer.from(await response.arrayBuffer());
   }
 
-  private static async uploadFileBuffer(
+  private async uploadFileBuffer(
     accessToken: string,
     path: string,
     buffer: Buffer
@@ -367,18 +365,9 @@ export class DropboxService {
     }
   }
 
-  private static async readManifest(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string
-  ) {
-    const accessToken = await this.getAccessToken(refreshToken);
-    const folderPath = this.getDropboxGameFolderPath(
-      userPreferences,
-      shop,
-      objectId
-    );
+  private async readManifestState(context: CloudProviderContext) {
+    const accessToken = await this.getAccessToken(context.refreshToken);
+    const folderPath = this.getDropboxGameFolderPath(context);
 
     await this.ensureFolderPath(accessToken, folderPath);
 
@@ -413,19 +402,16 @@ export class DropboxService {
     };
   }
 
-  private static async writeManifest(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
+  protected async readManifest(context: CloudProviderContext) {
+    const { manifest } = await this.readManifestState(context);
+    return manifest;
+  }
+
+  protected async writeManifest(
+    context: CloudProviderContext,
     manifest: CloudSyncManifest
   ) {
-    const { accessToken, manifestPath } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
+    const { accessToken, manifestPath } = await this.readManifestState(context);
 
     await this.uploadFileBuffer(
       accessToken,
@@ -434,205 +420,46 @@ export class DropboxService {
     );
   }
 
-  public static async listGameArtifacts(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string
-  ): Promise<GameArtifact[]> {
-    const { manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-
-    return manifest.artifacts.map(
-      ({
-        fileName: _fileName,
-        homeDir: _homeDir,
-        winePrefixPath: _winePrefixPath,
-        ...artifact
-      }) => artifact
-    );
-  }
-
-  public static async uploadGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    params: {
-      artifact: CloudSyncStoredArtifact;
-      archiveBuffer: Buffer;
-      shop: GameShop;
-      objectId: string;
-    }
+  protected async uploadArchive(
+    context: CloudProviderContext,
+    fileName: string,
+    archivePath: string
   ) {
-    const { accessToken, folderPath, manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      params.shop,
-      params.objectId
-    );
-    const archivePath = joinDropboxPath(folderPath, params.artifact.fileName);
+    const { accessToken, folderPath } = await this.readManifestState(context);
+    const remoteArchivePath = joinDropboxPath(folderPath, fileName);
 
-    await this.uploadFileBuffer(accessToken, archivePath, params.archiveBuffer);
-
-    manifest.artifacts = [params.artifact, ...manifest.artifacts];
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      params.shop,
-      params.objectId,
-      manifest
-    );
-  }
-
-  public static async downloadGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string
-  ) {
-    const { accessToken, folderPath, manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
-
-    if (!artifact) {
-      throw new Error("Dropbox backup could not be found");
-    }
-
-    const archiveBuffer = await this.downloadFileBuffer(
+    await this.uploadFileBuffer(
       accessToken,
-      joinDropboxPath(folderPath, artifact.fileName)
+      remoteArchivePath,
+      await fs.promises.readFile(archivePath)
     );
-
-    artifact.downloadCount += 1;
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
-
-    return {
-      archiveBuffer,
-      homeDir: artifact.homeDir,
-      winePrefixPath: artifact.winePrefixPath,
-    };
   }
 
-  public static async deleteGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string
+  protected async downloadArchive(
+    context: CloudProviderContext,
+    fileName: string
   ) {
-    const { accessToken, folderPath, manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
+    const { accessToken, folderPath } = await this.readManifestState(context);
+    return this.downloadFileBuffer(
+      accessToken,
+      joinDropboxPath(folderPath, fileName)
     );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
+  }
 
-    if (!artifact) return;
-
+  protected async deleteArchive(
+    context: CloudProviderContext,
+    fileName: string
+  ) {
+    const { accessToken, folderPath } = await this.readManifestState(context);
     await this.rpcRequest(accessToken, "/files/delete_v2", {
-      path: joinDropboxPath(folderPath, artifact.fileName),
+      path: joinDropboxPath(folderPath, fileName),
     });
-
-    manifest.artifacts = manifest.artifacts.filter(
-      (entry) => entry.id !== artifactId
-    );
-
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
   }
+}
 
-  public static async renameGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string,
-    label: string
-  ) {
-    const { manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
+export const dropboxProviderStrategy = new DropboxProviderStrategy();
 
-    if (!artifact) {
-      throw new Error("Dropbox backup could not be found");
-    }
-
-    artifact.label = label;
-    artifact.updatedAt = new Date().toISOString();
-
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
-  }
-
-  public static async toggleGameArtifactFreeze(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string,
-    freeze: boolean
-  ) {
-    const { manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
-
-    if (!artifact) {
-      throw new Error("Dropbox backup could not be found");
-    }
-
-    artifact.isFrozen = freeze;
-    artifact.updatedAt = new Date().toISOString();
-
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
-  }
-
+export class DropboxService {
   public static async authenticate() {
     const { clientId, clientSecret, redirectUri } = getDropboxOAuthConfig();
     const state = createOAuthState();

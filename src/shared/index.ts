@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { AchievementNotificationInfo } from "@types";
 
 export * from "./constants";
+export * from "./cloud-providers";
 export * from "./html-sanitizer";
 
 export class UserNotLoggedInError extends Error {

@@ -3,15 +3,16 @@ import { Readable } from "node:stream";
 import { URL } from "node:url";
 import { google } from "googleapis";
 import type { drive_v3 } from "googleapis";
-import type { GameArtifact, GameShop, UserPreferences } from "@types";
+import type { UserPreferences } from "@types";
 import {
   CLOUD_SYNC_MANIFEST_FILE_NAME,
   DEFAULT_EXTERNAL_CLOUD_ROOT_FOLDER,
   type CloudSyncManifest,
-  type CloudSyncStoredArtifact,
   createEmptyCloudSyncManifest,
   getCloudSyncGameFolderName,
 } from "./cloud-sync-manifest";
+import type { CloudProviderContext } from "./cloud-provider-strategy";
+import { ManifestCloudProviderStrategy } from "./manifest-cloud-provider-strategy";
 import {
   createOAuthState,
   waitForOAuthCallback,
@@ -92,8 +93,8 @@ const streamToBuffer = async (stream: NodeJS.ReadableStream) => {
   return Buffer.concat(chunks);
 };
 
-export class GoogleDriveService {
-  private static createOAuthClient(refreshToken: string) {
+class GoogleDriveProviderStrategy extends ManifestCloudProviderStrategy {
+  private createOAuthClient(refreshToken: string) {
     const { clientId, clientSecret, redirectUri } = getGoogleDriveOAuthConfig();
     const oauth2Client = new google.auth.OAuth2(
       clientId,
@@ -105,7 +106,7 @@ export class GoogleDriveService {
     return oauth2Client;
   }
 
-  private static getDriveClient(refreshToken: string) {
+  private getDriveClient(refreshToken: string) {
     const oauth2Client = this.createOAuthClient(refreshToken);
 
     return google.drive({
@@ -114,7 +115,7 @@ export class GoogleDriveService {
     });
   }
 
-  private static async findFolderByName(
+  private async findFolderByName(
     drive: drive_v3.Drive,
     name: string,
     parentId: string,
@@ -137,7 +138,7 @@ export class GoogleDriveService {
     return response.data.files?.[0] ?? null;
   }
 
-  private static async createFolder(
+  private async createFolder(
     drive: drive_v3.Drive,
     name: string,
     parentId: string
@@ -160,19 +161,16 @@ export class GoogleDriveService {
     return folderId;
   }
 
-  private static async ensureFolderPath(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string
-  ) {
-    const drive = this.getDriveClient(refreshToken);
-    const storageMode = getGoogleDriveStorageMode(userPreferences);
+  private async ensureFolderPath(context: CloudProviderContext) {
+    const drive = this.getDriveClient(context.refreshToken);
+    const storageMode = getGoogleDriveStorageMode(context.userPreferences);
     const spaces = storageMode === "customFolder" ? "drive" : "appDataFolder";
-    const baseSegments = getGoogleDriveBaseFolderSegments(userPreferences);
+    const baseSegments = getGoogleDriveBaseFolderSegments(
+      context.userPreferences
+    );
     const folderSegments = [
       ...baseSegments,
-      getCloudSyncGameFolderName(shop, objectId),
+      getCloudSyncGameFolderName(context.shop, context.objectId),
     ];
 
     let parentId = storageMode === "customFolder" ? "root" : "appDataFolder";
@@ -193,7 +191,7 @@ export class GoogleDriveService {
     return { drive, folderId: parentId, spaces };
   }
 
-  private static async findFileByName(
+  private async findFileByName(
     drive: drive_v3.Drive,
     name: string,
     parentId: string,
@@ -215,18 +213,8 @@ export class GoogleDriveService {
     return response.data.files?.[0] ?? null;
   }
 
-  private static async readManifest(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string
-  ) {
-    const { drive, folderId, spaces } = await this.ensureFolderPath(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
+  private async readManifestState(context: CloudProviderContext) {
+    const { drive, folderId, spaces } = await this.ensureFolderPath(context);
     const manifestFile = await this.findFileByName(
       drive,
       CLOUD_SYNC_MANIFEST_FILE_NAME,
@@ -269,19 +257,17 @@ export class GoogleDriveService {
     };
   }
 
-  private static async writeManifest(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
+  protected async readManifest(context: CloudProviderContext) {
+    const { manifest } = await this.readManifestState(context);
+    return manifest;
+  }
+
+  protected async writeManifest(
+    context: CloudProviderContext,
     manifest: CloudSyncManifest
   ) {
-    const { drive, folderId, manifestFileId } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
+    const { drive, folderId, manifestFileId } =
+      await this.readManifestState(context);
     const manifestBuffer = Buffer.from(
       JSON.stringify(manifest, null, 2),
       "utf8"
@@ -309,100 +295,34 @@ export class GoogleDriveService {
     });
   }
 
-  public static async listGameArtifacts(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string
-  ): Promise<GameArtifact[]> {
-    const { manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-
-    return manifest.artifacts.map(
-      ({
-        fileName: _fileName,
-        homeDir: _homeDir,
-        winePrefixPath: _winePrefixPath,
-        ...artifact
-      }) => artifact
-    );
-  }
-
-  public static async uploadGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    params: {
-      artifact: CloudSyncStoredArtifact;
-      archivePath: string;
-      shop: GameShop;
-      objectId: string;
-    }
+  protected async uploadArchive(
+    context: CloudProviderContext,
+    fileName: string,
+    archivePath: string
   ) {
-    const { drive, folderId } = await this.ensureFolderPath(
-      refreshToken,
-      userPreferences,
-      params.shop,
-      params.objectId
-    );
+    const { drive, folderId } = await this.ensureFolderPath(context);
 
     await drive.files.create({
       requestBody: {
-        name: params.artifact.fileName,
+        name: fileName,
         parents: [folderId],
       },
       media: {
         mimeType: "application/tar",
-        body: Readable.from(fs.readFileSync(params.archivePath)),
+        body: Readable.from(fs.readFileSync(archivePath)),
       },
       fields: "id",
     });
-
-    const { manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      params.shop,
-      params.objectId
-    );
-
-    manifest.artifacts = [params.artifact, ...manifest.artifacts];
-
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      params.shop,
-      params.objectId,
-      manifest
-    );
   }
 
-  public static async downloadGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string
+  protected async downloadArchive(
+    context: CloudProviderContext,
+    fileName: string
   ) {
-    const { drive, folderId, spaces, manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
-
-    if (!artifact) {
-      throw new Error("Google Drive backup could not be found");
-    }
-
+    const { drive, folderId, spaces } = await this.readManifestState(context);
     const remoteFile = await this.findFileByName(
       drive,
-      artifact.fileName,
+      fileName,
       folderId,
       spaces
     );
@@ -425,44 +345,17 @@ export class GoogleDriveService {
       response.data as unknown as NodeJS.ReadableStream
     );
 
-    artifact.downloadCount += 1;
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
-
-    return {
-      archiveBuffer,
-      homeDir: artifact.homeDir,
-      winePrefixPath: artifact.winePrefixPath,
-    };
+    return archiveBuffer;
   }
 
-  public static async deleteGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string
+  protected async deleteArchive(
+    context: CloudProviderContext,
+    fileName: string
   ) {
-    const { drive, folderId, spaces, manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
-
-    if (!artifact) return;
-
+    const { drive, folderId, spaces } = await this.readManifestState(context);
     const remoteFile = await this.findFileByName(
       drive,
-      artifact.fileName,
+      fileName,
       folderId,
       spaces
     );
@@ -472,87 +365,12 @@ export class GoogleDriveService {
         fileId: remoteFile.id,
       });
     }
-
-    manifest.artifacts = manifest.artifacts.filter(
-      (entry) => entry.id !== artifactId
-    );
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
   }
+}
 
-  public static async renameGameArtifact(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string,
-    label: string
-  ) {
-    const { manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
+export const googleDriveProviderStrategy = new GoogleDriveProviderStrategy();
 
-    if (!artifact) {
-      throw new Error("Google Drive backup could not be found");
-    }
-
-    artifact.label = label;
-    artifact.updatedAt = new Date().toISOString();
-
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
-  }
-
-  public static async toggleGameArtifactFreeze(
-    refreshToken: string,
-    userPreferences: UserPreferences | null,
-    shop: GameShop,
-    objectId: string,
-    artifactId: string,
-    freeze: boolean
-  ) {
-    const { manifest } = await this.readManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId
-    );
-    const artifact = manifest.artifacts.find(
-      (entry) => entry.id === artifactId
-    );
-
-    if (!artifact) {
-      throw new Error("Google Drive backup could not be found");
-    }
-
-    artifact.isFrozen = freeze;
-    artifact.updatedAt = new Date().toISOString();
-
-    await this.writeManifest(
-      refreshToken,
-      userPreferences,
-      shop,
-      objectId,
-      manifest
-    );
-  }
-
+export class GoogleDriveService {
   public static async authenticate() {
     const { clientId, clientSecret, redirectUri } = getGoogleDriveOAuthConfig();
     const oauth2Client = new google.auth.OAuth2(

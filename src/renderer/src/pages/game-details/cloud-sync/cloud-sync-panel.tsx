@@ -3,7 +3,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import { cloudSyncContext, gameDetailsContext } from "@renderer/context";
 import "./cloud-sync-panel.scss";
-import { formatBytes } from "@shared";
+import { formatBytes, getExternalCloudProviderLabel } from "@shared";
 import {
   ClockIcon,
   DeviceDesktopIcon,
@@ -27,7 +27,7 @@ import { useTranslation } from "react-i18next";
 import { AxiosProgressEvent } from "axios";
 import { formatDownloadProgress } from "@renderer/helpers";
 import { CloudSyncRenameArtifactModal } from "../cloud-sync-rename-artifact-modal/cloud-sync-rename-artifact-modal";
-import type { CloudSaveProvider, GameArtifact } from "@types";
+import type { GameArtifact } from "@types";
 import { orderBy } from "lodash-es";
 import { MoreVertical } from "lucide-react";
 import { DropdownMenu } from "@renderer/components/dropdown-menu/dropdown-menu";
@@ -81,12 +81,8 @@ export function CloudSyncPanel({
   const activeProvider = game?.cloudSaveProvider ?? null;
   const usesHydraCloud = activeProvider == null;
 
-  const providerLabelById: Record<CloudSaveProvider, string> = {
-    googleDrive: "Google Drive",
-    dropbox: "Dropbox",
-  };
   const providerLabel = activeProvider
-    ? providerLabelById[activeProvider]
+    ? getExternalCloudProviderLabel(activeProvider)
     : "Hydra Cloud";
 
   const handleDeleteArtifactClick = async (gameArtifactId: string) => {

@@ -20,8 +20,12 @@ import YAML from "yaml";
 import { formatDate, SubscriptionRequiredError } from "@shared";
 import i18next, { t } from "i18next";
 import type { CloudSyncStoredArtifact } from "./cloud/cloud-sync-manifest";
-import { DropboxService } from "./cloud/dropbox";
-import { GoogleDriveService } from "./cloud/google-drive";
+import { getCloudProviderDefinition } from "./cloud/cloud-provider-registry";
+import type {
+  CloudArtifactDownload,
+  CloudProviderContext,
+  CloudProviderDefinition,
+} from "./cloud/cloud-provider-strategy";
 import { HydraApi } from "./hydra-api";
 import { logger } from "./logger";
 import { Ludusavi } from "./ludusavi";
@@ -39,25 +43,14 @@ type ResolvedCloudSyncProvider =
       effectiveWinePrefixPath: string | null;
     }
   | {
-      kind: "googleDrive";
-      game: Game | null;
-      userPreferences: UserPreferences | null;
-      effectiveWinePrefixPath: string | null;
-      refreshToken: string;
-    }
-  | {
-      kind: "dropbox";
+      kind: "external";
+      providerId: CloudSaveProvider;
+      providerDefinition: CloudProviderDefinition;
       game: Game | null;
       userPreferences: UserPreferences | null;
       effectiveWinePrefixPath: string | null;
       refreshToken: string;
     };
-
-interface DownloadedExternalArtifact {
-  archiveBuffer: Buffer;
-  homeDir: string;
-  winePrefixPath?: string | null;
-}
 
 export class CloudSync {
   public static getWindowsLikeUserProfilePath(winePrefixPath?: string | null) {
@@ -181,31 +174,18 @@ export class CloudSync {
       await this.getGameConfiguration(shop, objectId);
     const provider = game?.cloudSaveProvider ?? null;
 
-    if (provider === "googleDrive") {
-      const refreshToken = userPreferences?.googleDriveRefreshToken;
+    if (provider) {
+      const providerDefinition = getCloudProviderDefinition(provider);
+      const refreshToken = providerDefinition.getRefreshToken(userPreferences);
 
       if (!refreshToken) {
-        throw new Error("Google Drive is not connected");
+        throw new Error(providerDefinition.disconnectedErrorMessage);
       }
 
       return {
-        kind: "googleDrive",
-        game,
-        userPreferences,
-        effectiveWinePrefixPath,
-        refreshToken,
-      };
-    }
-
-    if (provider === "dropbox") {
-      const refreshToken = userPreferences?.dropboxRefreshToken;
-
-      if (!refreshToken) {
-        throw new Error("Dropbox is not connected");
-      }
-
-      return {
-        kind: "dropbox",
+        kind: "external",
+        providerId: provider,
+        providerDefinition,
         game,
         userPreferences,
         effectiveWinePrefixPath,
@@ -287,6 +267,19 @@ export class CloudSync {
     };
   }
 
+  private static createProviderContext(
+    provider: Extract<ResolvedCloudSyncProvider, { kind: "external" }>,
+    shop: GameShop,
+    objectId: string
+  ): CloudProviderContext {
+    return {
+      refreshToken: provider.refreshToken,
+      userPreferences: provider.userPreferences,
+      shop,
+      objectId,
+    };
+  }
+
   private static async uploadToHydraCloud(
     bundleLocation: string,
     shop: GameShop,
@@ -326,10 +319,7 @@ export class CloudSync {
   }
 
   private static async uploadToExternalProvider(
-    provider: Extract<
-      ResolvedCloudSyncProvider,
-      { kind: "googleDrive" | "dropbox" }
-    >,
+    provider: Extract<ResolvedCloudSyncProvider, { kind: "external" }>,
     bundleLocation: string,
     shop: GameShop,
     objectId: string,
@@ -344,31 +334,11 @@ export class CloudSync {
       provider.effectiveWinePrefixPath
     );
 
-    if (provider.kind === "googleDrive") {
-      await GoogleDriveService.uploadGameArtifact(
-        provider.refreshToken,
-        provider.userPreferences,
-        {
-          artifact,
-          archivePath: bundleLocation,
-          shop,
-          objectId,
-        }
-      );
-
-      return;
-    }
-
-    const archiveBuffer = await fs.promises.readFile(bundleLocation);
-
-    await DropboxService.uploadGameArtifact(
-      provider.refreshToken,
-      provider.userPreferences,
+    await provider.providerDefinition.strategy.uploadGameArtifact(
+      this.createProviderContext(provider, shop, objectId),
       {
         artifact,
-        archiveBuffer,
-        shop,
-        objectId,
+        archivePath: bundleLocation,
       }
     );
   }
@@ -468,33 +438,16 @@ export class CloudSync {
   }
 
   private static async downloadExternalArtifactArchive(
-    provider: Extract<
-      ResolvedCloudSyncProvider,
-      { kind: "googleDrive" | "dropbox" }
-    >,
+    provider: Extract<ResolvedCloudSyncProvider, { kind: "external" }>,
     shop: GameShop,
     objectId: string,
     gameArtifactId: string
   ) {
-    let download: DownloadedExternalArtifact;
-
-    if (provider.kind === "googleDrive") {
-      download = await GoogleDriveService.downloadGameArtifact(
-        provider.refreshToken,
-        provider.userPreferences,
-        shop,
-        objectId,
+    const download: CloudArtifactDownload =
+      await provider.providerDefinition.strategy.downloadGameArtifact(
+        this.createProviderContext(provider, shop, objectId),
         gameArtifactId
       );
-    } else {
-      download = await DropboxService.downloadGameArtifact(
-        provider.refreshToken,
-        provider.userPreferences,
-        shop,
-        objectId,
-        gameArtifactId
-      );
-    }
 
     const archivePath = path.join(
       SystemPath.getPath("userData"),
@@ -531,20 +484,8 @@ export class CloudSync {
       );
     }
 
-    if (provider.kind === "googleDrive") {
-      return GoogleDriveService.listGameArtifacts(
-        provider.refreshToken,
-        provider.userPreferences,
-        shop,
-        objectId
-      );
-    }
-
-    return DropboxService.listGameArtifacts(
-      provider.refreshToken,
-      provider.userPreferences,
-      shop,
-      objectId
+    return provider.providerDefinition.strategy.listGameArtifacts(
+      this.createProviderContext(provider, shop, objectId)
     );
   }
 
@@ -691,21 +632,8 @@ export class CloudSync {
       });
     }
 
-    if (provider.kind === "googleDrive") {
-      return GoogleDriveService.deleteGameArtifact(
-        provider.refreshToken,
-        provider.userPreferences,
-        shop,
-        objectId,
-        gameArtifactId
-      );
-    }
-
-    return DropboxService.deleteGameArtifact(
-      provider.refreshToken,
-      provider.userPreferences,
-      shop,
-      objectId,
+    return provider.providerDefinition.strategy.deleteGameArtifact(
+      this.createProviderContext(provider, shop, objectId),
       gameArtifactId
     );
   }
@@ -726,22 +654,8 @@ export class CloudSync {
       );
     }
 
-    if (provider.kind === "googleDrive") {
-      return GoogleDriveService.renameGameArtifact(
-        provider.refreshToken,
-        provider.userPreferences,
-        shop,
-        objectId,
-        gameArtifactId,
-        label
-      );
-    }
-
-    return DropboxService.renameGameArtifact(
-      provider.refreshToken,
-      provider.userPreferences,
-      shop,
-      objectId,
+    return provider.providerDefinition.strategy.renameGameArtifact(
+      this.createProviderContext(provider, shop, objectId),
       gameArtifactId,
       label
     );
@@ -765,22 +679,8 @@ export class CloudSync {
       );
     }
 
-    if (provider.kind === "googleDrive") {
-      return GoogleDriveService.toggleGameArtifactFreeze(
-        provider.refreshToken,
-        provider.userPreferences,
-        shop,
-        objectId,
-        gameArtifactId,
-        freeze
-      );
-    }
-
-    return DropboxService.toggleGameArtifactFreeze(
-      provider.refreshToken,
-      provider.userPreferences,
-      shop,
-      objectId,
+    return provider.providerDefinition.strategy.toggleGameArtifactFreeze(
+      this.createProviderContext(provider, shop, objectId),
       gameArtifactId,
       freeze
     );
