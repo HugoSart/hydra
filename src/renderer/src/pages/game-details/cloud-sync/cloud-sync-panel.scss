@@ -183,5 +183,16 @@
     flex-direction: column;
     gap: globals.$spacing-unit;
     width: min(500px, 100%);
+
+    p {
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  &__hydra-cloud-option {
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
   }
 }

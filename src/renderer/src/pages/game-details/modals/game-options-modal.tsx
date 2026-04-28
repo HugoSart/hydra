@@ -1,7 +1,14 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@renderer/components";
-import { formatBytes } from "@shared";
+import { formatBytes, getConnectedExternalCloudProviders } from "@shared";
 
 import type {
   CloudSaveProvider,
@@ -10,10 +17,12 @@ import type {
   LibraryGame,
   ProtonVersion,
   ShortcutLocation,
+  UserPreferences,
 } from "@types";
 import { gameDetailsContext } from "@renderer/context";
 import { DeleteGameModal } from "@renderer/pages/downloads/delete-game-modal";
 import {
+  useAppDispatch,
   useAppSelector,
   useDownload,
   useGameCollections,
@@ -21,6 +30,7 @@ import {
   useToast,
   useUserDetails,
 } from "@renderer/hooks";
+import { setUserPreferences } from "@renderer/features";
 import { RemoveGameFromLibraryModal } from "./remove-from-library-modal";
 import { ResetAchievementsModal } from "./reset-achievements-modal";
 import { ChangeGamePlaytimeModal } from "./change-game-playtime-modal";
@@ -31,7 +41,6 @@ import {
   FileDirectoryIcon,
   GearIcon,
   ImageIcon,
-  SyncIcon,
 } from "@primer/octicons-react";
 import { Wrench } from "lucide-react";
 import { GameAssetsSettings } from "./game-assets-settings";
@@ -46,7 +55,6 @@ import { CompatibilitySettingsSection } from "./game-options-modal/compatibility
 import { DownloadsSettingsSection } from "./game-options-modal/downloads-section";
 import { DangerZoneSection } from "./game-options-modal/danger-zone-section";
 import { HydraCloudSettingsSection } from "./game-options-modal/hydra-cloud-section";
-import { CloudSavesSettingsSection } from "./game-options-modal/cloud-saves-section";
 import type { GameSettingsCategoryId } from "./game-options-modal/types";
 import { CreateSteamShortcutModal } from "./create-steam-shortcut-modal";
 
@@ -101,6 +109,8 @@ export function GameOptionsModal({
   const [automaticCloudSync, setAutomaticCloudSync] = useState(
     game.automaticCloudSync ?? false
   );
+  const [cloudUserPreferences, setCloudUserPreferences] =
+    useState<UserPreferences | null>(null);
   const [selectedCloudSaveProvider, setSelectedCloudSaveProvider] =
     useState<CloudSaveProvider | null>(game.cloudSaveProvider ?? null);
   const [creatingSteamShortcut, setCreatingSteamShortcut] = useState(false);
@@ -133,13 +143,21 @@ export function GameOptionsModal({
     isGameDeleting,
     cancelDownload,
   } = useDownload();
-  const { userDetails } = useUserDetails();
+  const { userDetails, hasActiveSubscription } = useUserDetails();
+  const dispatch = useAppDispatch();
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
   );
+  const effectiveUserPreferences = cloudUserPreferences ?? userPreferences;
+  const connectedExternalCloudProviders = useMemo(
+    () => getConnectedExternalCloudProviders(effectiveUserPreferences),
+    [effectiveUserPreferences]
+  );
 
-  const globalAutoRunGamemode = userPreferences?.autoRunGamemode === true;
-  const globalAutoRunMangohud = userPreferences?.autoRunMangohud === true;
+  const globalAutoRunGamemode =
+    effectiveUserPreferences?.autoRunGamemode === true;
+  const globalAutoRunMangohud =
+    effectiveUserPreferences?.autoRunMangohud === true;
   const hasAchievements =
     (achievements?.filter((a) => a.unlocked).length ?? 0) > 0;
   const deleting = isGameDeleting(game.id);
@@ -150,11 +168,19 @@ export function GameOptionsModal({
   useEffect(() => {
     if (visible) {
       window.electron
+        .getUserPreferences()
+        .then((preferences) => {
+          setCloudUserPreferences(preferences);
+          dispatch(setUserPreferences(preferences));
+        })
+        .catch(() => setCloudUserPreferences(null));
+
+      window.electron
         .getAvailableDrives?.()
         .then(setDrives)
         .catch((err) => console.error("Failed to fetch drives:", err));
     }
-  }, [visible]);
+  }, [dispatch, visible]);
 
   useEffect(() => {
     if (
@@ -178,6 +204,51 @@ export function GameOptionsModal({
   useEffect(() => {
     setSelectedCloudSaveProvider(game.cloudSaveProvider ?? null);
   }, [game.cloudSaveProvider]);
+
+  const persistCloudSaveProvider = useCallback(
+    async (nextProvider: CloudSaveProvider | null) => {
+      const gameKey = getGameKey(game.shop, game.objectId);
+      const gameData = (await levelDBService.get(
+        gameKey,
+        "games"
+      )) as Game | null;
+
+      if (gameData) {
+        await levelDBService.put(
+          gameKey,
+          { ...gameData, cloudSaveProvider: nextProvider },
+          "games"
+        );
+      }
+
+      await updateGame();
+    },
+    [game.objectId, game.shop, updateGame]
+  );
+
+  useEffect(() => {
+    if (
+      !visible ||
+      game.shop === "custom" ||
+      hasActiveSubscription ||
+      selectedCloudSaveProvider ||
+      connectedExternalCloudProviders.length !== 1
+    ) {
+      return;
+    }
+
+    const nextProvider = connectedExternalCloudProviders[0].id;
+    setSelectedCloudSaveProvider(nextProvider);
+    void persistCloudSaveProvider(nextProvider);
+  }, [
+    connectedExternalCloudProviders,
+    game.shop,
+    hasActiveSubscription,
+    persistCloudSaveProvider,
+    selectedCloudSaveProvider,
+    visible,
+  ]);
+
   useEffect(() => {
     setSelectedProtonPath(game.protonPath ?? "");
   }, [game.protonPath]);
@@ -645,14 +716,9 @@ export function GameOptionsModal({
         icon: <ImageIcon size={16} />,
       },
       {
-        id: "hydra_cloud" as const,
-        label: t("settings_category_hydra_cloud"),
+        id: "cloud" as const,
+        label: t("settings_category_cloud", { defaultValue: "Cloud" }),
         icon: <CloudIcon size={16} />,
-      },
-      {
-        id: "cloud_saves" as const,
-        label: "Cloud Saves",
-        icon: <SyncIcon size={16} />,
       },
       ...(shouldShowWinePrefixConfiguration
         ? [
@@ -731,22 +797,7 @@ export function GameOptionsModal({
     const nextProvider = nextProviderValue as CloudSaveProvider | null;
 
     setSelectedCloudSaveProvider(nextProvider);
-
-    const gameKey = getGameKey(game.shop, game.objectId);
-    const gameData = (await levelDBService.get(
-      gameKey,
-      "games"
-    )) as Game | null;
-
-    if (gameData) {
-      await levelDBService.put(
-        gameKey,
-        { ...gameData, cloudSaveProvider: nextProvider },
-        "games"
-      );
-    }
-
-    updateGame();
+    await persistCloudSaveProvider(nextProvider);
   };
 
   return (
@@ -887,17 +938,13 @@ export function GameOptionsModal({
                 onGameUpdated={updateGame}
               />
             )}
-            {selectedCategory === "hydra_cloud" && (
+            {selectedCategory === "cloud" && (
               <HydraCloudSettingsSection
                 game={game}
                 automaticCloudSync={automaticCloudSync}
-                onToggleAutomaticCloudSync={handleToggleAutomaticCloudSync}
-              />
-            )}
-            {selectedCategory === "cloud_saves" && (
-              <CloudSavesSettingsSection
                 selectedCloudSaveProvider={selectedCloudSaveProvider}
-                userPreferences={userPreferences}
+                userPreferences={effectiveUserPreferences}
+                onToggleAutomaticCloudSync={handleToggleAutomaticCloudSync}
                 onChangeCloudSaveProvider={handleChangeCloudSaveProvider}
               />
             )}

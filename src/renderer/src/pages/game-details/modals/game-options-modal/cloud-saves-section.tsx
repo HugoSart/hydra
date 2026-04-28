@@ -12,6 +12,7 @@ interface ConnectedCloudProviderOption {
 
 interface CloudSavesSettingsSectionProps {
   selectedCloudSaveProvider: CloudSaveProvider | null;
+  hasHydraCloud: boolean;
   userPreferences: UserPreferences | null;
   onChangeCloudSaveProvider: (
     event: React.ChangeEvent<HTMLSelectElement>
@@ -36,6 +37,7 @@ const getConnectedCloudProviderOptions = (
 
 export function CloudSavesSettingsSection({
   selectedCloudSaveProvider,
+  hasHydraCloud,
   userPreferences,
   onChangeCloudSaveProvider,
 }: Readonly<CloudSavesSettingsSectionProps>) {
@@ -47,11 +49,20 @@ export function CloudSavesSettingsSection({
     );
 
   const options = [
-    {
-      key: "none",
-      value: "",
-      label: "No provider selected",
-    },
+    ...(hasHydraCloud ||
+    !selectedCloudSaveProvider ||
+    !isSelectedProviderConnected
+      ? [
+          {
+            key: "none",
+            value: "",
+            label:
+              hasHydraCloud && !selectedCloudSaveProvider
+                ? "Hydra Cloud"
+                : "No provider selected",
+          },
+        ]
+      : []),
     ...connectedProviders.map((provider) => ({
       key: provider.value,
       value: provider.value,
@@ -68,7 +79,13 @@ export function CloudSavesSettingsSection({
       : []),
   ];
   const canSelectProvider =
-    connectedProviders.length > 0 || !isSelectedProviderConnected;
+    hasHydraCloud ||
+    connectedProviders.length > 0 ||
+    !isSelectedProviderConnected;
+
+  if (!canSelectProvider) {
+    return null;
+  }
 
   return (
     <div className="game-options-modal__cloud-saves">
@@ -80,34 +97,27 @@ export function CloudSavesSettingsSection({
         </p>
       </div>
 
-      {canSelectProvider ? (
-        <div className="game-options-modal__section">
-          <SelectField
-            theme="dark"
-            label="Cloud provider"
-            value={selectedCloudSaveProvider ?? ""}
-            options={options}
-            onChange={onChangeCloudSaveProvider}
-          />
+      <div className="game-options-modal__section">
+        <SelectField
+          theme="dark"
+          label="Cloud provider"
+          value={selectedCloudSaveProvider ?? ""}
+          options={options}
+          onChange={onChangeCloudSaveProvider}
+        />
 
-          {!isSelectedProviderConnected && selectedCloudSaveProvider ? (
-            <p className="game-options-modal__category-note">
-              The previously selected provider is no longer connected. Choose a
-              connected provider or clear the selection.
-            </p>
-          ) : (
-            <p className="game-options-modal__category-note">
-              Only cloud services connected in Settings &gt; Integrations are
-              available here.
-            </p>
-          )}
-        </div>
-      ) : (
-        <p className="game-options-modal__category-note">
-          No connected cloud providers yet. Connect Google Drive or Dropbox in
-          Settings &gt; Integrations to use this game-level setting.
-        </p>
-      )}
+        {!isSelectedProviderConnected && selectedCloudSaveProvider ? (
+          <p className="game-options-modal__category-note">
+            The previously selected provider is no longer connected. Choose a
+            connected provider or clear the selection.
+          </p>
+        ) : (
+          <p className="game-options-modal__category-note">
+            Only cloud services connected in Settings &gt; Integrations are
+            available here.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

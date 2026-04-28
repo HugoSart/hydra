@@ -1,9 +1,13 @@
-import { Button, CheckboxField } from "@renderer/components";
+import { Button, CheckboxField, Link } from "@renderer/components";
 import { useContext, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import { cloudSyncContext, gameDetailsContext } from "@renderer/context";
 import "./cloud-sync-panel.scss";
-import { formatBytes, getExternalCloudProviderLabel } from "@shared";
+import {
+  formatBytes,
+  getConnectedExternalCloudProviders,
+  getExternalCloudProviderLabel,
+} from "@shared";
 import {
   ClockIcon,
   DeviceDesktopIcon,
@@ -27,7 +31,7 @@ import { useTranslation } from "react-i18next";
 import { AxiosProgressEvent } from "axios";
 import { formatDownloadProgress } from "@renderer/helpers";
 import { CloudSyncRenameArtifactModal } from "../cloud-sync-rename-artifact-modal/cloud-sync-rename-artifact-modal";
-import type { GameArtifact } from "@types";
+import type { CloudSaveProvider, GameArtifact, UserPreferences } from "@types";
 import { orderBy } from "lodash-es";
 import { MoreVertical } from "lucide-react";
 import { DropdownMenu } from "@renderer/components/dropdown-menu/dropdown-menu";
@@ -35,11 +39,15 @@ import { Tooltip } from "react-tooltip";
 
 interface CloudSyncPanelProps {
   automaticCloudSync: boolean;
+  selectedCloudSaveProvider?: CloudSaveProvider | null;
+  userPreferences?: UserPreferences | null;
   onToggleAutomaticCloudSync: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function CloudSyncPanel({
   automaticCloudSync,
+  selectedCloudSaveProvider,
+  userPreferences: panelUserPreferences,
   onToggleAutomaticCloudSync,
 }: Readonly<CloudSyncPanelProps>) {
   const [deletingArtifact, setDeletingArtifact] = useState(false);
@@ -77,9 +85,16 @@ export function CloudSyncPanel({
   const { showSuccessToast, showErrorToast } = useToast();
 
   const userDetails = useAppSelector((state) => state.userDetails.userDetails);
+  const globalUserPreferences = useAppSelector(
+    (state) => state.userPreferences.value
+  );
+  const userPreferences = panelUserPreferences ?? globalUserPreferences;
   const backupsPerGameLimit = userDetails?.quirks?.backupsPerGameLimit ?? 0;
-  const activeProvider = game?.cloudSaveProvider ?? null;
+  const persistedProvider = game?.cloudSaveProvider ?? null;
+  const activeProvider = selectedCloudSaveProvider ?? persistedProvider;
   const usesHydraCloud = activeProvider == null;
+  const hasConnectedExternalProvider =
+    getConnectedExternalCloudProviders(userPreferences).length > 0;
 
   const providerLabel = activeProvider
     ? getExternalCloudProviderLabel(activeProvider)
@@ -121,6 +136,8 @@ export function CloudSyncPanel({
     getGameArtifacts,
     getGameBackupPreview,
     hasActiveSubscription,
+    activeProvider,
+    persistedProvider,
     usesHydraCloud,
   ]);
 
@@ -205,10 +222,39 @@ export function CloudSyncPanel({
   if (usesHydraCloud && !hasActiveSubscription) {
     return (
       <div className="cloud-sync-panel__upgrade">
-        <p>{tHydraCloud("hydra_cloud_feature_found")}</p>
-        <Button onClick={() => window.electron.openCheckout()}>
-          {tHydraCloud("learn_more")}
-        </Button>
+        {hasConnectedExternalProvider ? (
+          <p>
+            {tHydraCloud("cloud_sync_select_connected_provider", {
+              defaultValue:
+                "Choose one of your connected cloud services in the Cloud saves section above.",
+            })}
+          </p>
+        ) : (
+          <p>
+            {tHydraCloud("cloud_sync_setup_options_prefix", {
+              defaultValue: "Connect your own cloud service in ",
+            })}
+            <Link to="/settings?tab=integrations">
+              {tHydraCloud("settings_integrations", {
+                defaultValue: "Settings > Integrations",
+              })}
+            </Link>
+            {tHydraCloud("cloud_sync_setup_options_suffix", {
+              defaultValue: " and then select it here for this game.",
+            })}
+          </p>
+        )}
+        <div className="cloud-sync-panel__hydra-cloud-option">
+          <p>
+            {tHydraCloud("hydra_cloud_first_party_option", {
+              defaultValue:
+                "Or use Hydra Cloud for first-party cloud save support.",
+            })}
+          </p>
+          <Button onClick={() => window.electron.openCheckout()}>
+            {tHydraCloud("learn_more")}
+          </Button>
+        </div>
       </div>
     );
   }
