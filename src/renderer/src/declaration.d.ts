@@ -1,4 +1,9 @@
-import type { AuthPage, CloudProviderAuthCredentials } from "@shared";
+import type {
+  AuthPage,
+  CloudProviderAuthCredentials,
+  CloudProviderAppCredentialsConfig,
+  CloudProviderAuthenticationResult,
+} from "@shared";
 import type {
   AppUpdaterEvent,
   GameShop,
@@ -269,18 +274,13 @@ declare global {
     authenticateTorBox: (apiToken: string) => Promise<TorBoxUser>;
     authenticateGoogleDrive: (
       credentials: CloudProviderAuthCredentials
-    ) => Promise<{
-      refreshToken: string;
-      accountEmail: string;
-      clientSecret: string;
-    }>;
+    ) => Promise<CloudProviderAuthenticationResult>;
     authenticateDropbox: (
       credentials: CloudProviderAuthCredentials
-    ) => Promise<{
-      refreshToken: string;
-      accountEmail: string;
-      clientSecret: string;
-    }>;
+    ) => Promise<CloudProviderAuthenticationResult>;
+    getCloudProviderAppCredentialsConfig: () => Promise<
+      CloudProviderAppCredentialsConfig[]
+    >;
     getUserPreferences: () => Promise<UserPreferences | null>;
     updateUserPreferences: (
       preferences: Partial<UserPreferences>

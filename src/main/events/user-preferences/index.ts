@@ -5,5 +5,6 @@ import "./authenticate-torbox";
 import "./authenticate-google-drive";
 import "./authenticate-dropbox";
 import "./auto-launch";
+import "./get-cloud-provider-app-credentials-config";
 import "./get-user-preferences";
 import "./update-user-preferences";

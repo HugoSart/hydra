@@ -9,7 +9,9 @@ import {
   getExternalCloudProviderStorageMode,
 } from "@shared";
 import type {
+  CloudProviderAppCredentialsConfig,
   CloudProviderAuthCredentials,
+  CloudProviderAuthenticationResult,
   CloudProviderMetadata,
 } from "@shared";
 import { Button, CheckboxField, Link, TextField } from "@renderer/components";
@@ -46,12 +48,6 @@ const validateCloudPath = (providerName: string, value: string) => {
   return null;
 };
 
-type CloudProviderConnection = {
-  refreshToken: string;
-  accountEmail: string;
-  clientSecret: string;
-};
-
 type CloudProviderCredentialErrors = {
   clientId?: string;
   clientSecret?: string;
@@ -65,7 +61,8 @@ interface CloudProviderSectionProps {
   ) => Promise<void>;
   authenticate: (
     credentials: CloudProviderAuthCredentials
-  ) => Promise<CloudProviderConnection>;
+  ) => Promise<CloudProviderAuthenticationResult>;
+  hasEnvAppCredentials: boolean;
   showSuccessToast: (title: string, message?: string) => void;
   showErrorToast: (title: string, message?: string) => void;
 }
@@ -75,6 +72,7 @@ function CloudProviderSection({
   userPreferences,
   updateUserPreferences,
   authenticate,
+  hasEnvAppCredentials,
   showSuccessToast,
   showErrorToast,
 }: Readonly<CloudProviderSectionProps>) {
@@ -94,10 +92,13 @@ function CloudProviderSection({
   const [customPathError, setCustomPathError] = useState<string | null>(null);
   const [isSavingCustomPath, setIsSavingCustomPath] = useState(false);
   const [isEditingCustomPath, setIsEditingCustomPath] = useState(false);
-  const savedClientId =
-    (userPreferences?.[provider.clientIdKey] as string | null) ?? "";
+  const savedClientId = hasEnvAppCredentials
+    ? ""
+    : ((userPreferences?.[provider.clientIdKey] as string | null) ?? "");
   const isConnected = !!accountEmail;
   const clientIdPreview = savedClientId.slice(0, 4);
+  const isDefaultCloudSaveProvider =
+    userPreferences?.defaultCloudSaveProvider === provider.id;
 
   useEffect(() => {
     const nextAccountEmail =
@@ -130,16 +131,16 @@ function CloudProviderSection({
     if (isLoading) return;
 
     const credentials = {
-      clientId: clientId.trim(),
-      clientSecret: clientSecret.trim(),
+      clientId: hasEnvAppCredentials ? "" : clientId.trim(),
+      clientSecret: hasEnvAppCredentials ? "" : clientSecret.trim(),
     };
     const nextCredentialErrors: CloudProviderCredentialErrors = {};
 
-    if (!credentials.clientId) {
+    if (!hasEnvAppCredentials && !credentials.clientId) {
       nextCredentialErrors.clientId = `Enter your ${provider.label} ${provider.clientIdLabel.toLowerCase()}.`;
     }
 
-    if (!credentials.clientSecret) {
+    if (!hasEnvAppCredentials && !credentials.clientSecret) {
       nextCredentialErrors.clientSecret = `Enter your ${provider.label} ${provider.clientSecretLabel.toLowerCase()}.`;
     }
 
@@ -154,13 +155,15 @@ function CloudProviderSection({
       const result = await authenticate(credentials);
 
       await updateUserPreferences({
-        [provider.clientIdKey]: credentials.clientId,
+        [provider.clientIdKey]: hasEnvAppCredentials
+          ? null
+          : credentials.clientId,
         [provider.clientSecretKey]: result.clientSecret,
         [provider.refreshTokenKey]: result.refreshToken,
         [provider.accountEmailKey]: result.accountEmail,
       } as Partial<UserPreferences>);
 
-      setClientId(credentials.clientId);
+      setClientId(hasEnvAppCredentials ? "" : credentials.clientId);
       setClientSecret("");
       setCredentialErrors({});
       setAccountEmail(result.accountEmail);
@@ -200,12 +203,18 @@ function CloudProviderSection({
     setIsLoading(true);
 
     try {
-      await updateUserPreferences({
+      const preferences: Partial<UserPreferences> = {
         [provider.clientIdKey]: null,
         [provider.clientSecretKey]: null,
         [provider.refreshTokenKey]: null,
         [provider.accountEmailKey]: null,
-      } as Partial<UserPreferences>);
+      } as Partial<UserPreferences>;
+
+      if (isDefaultCloudSaveProvider) {
+        preferences.defaultCloudSaveProvider = null;
+      }
+
+      await updateUserPreferences(preferences);
 
       setClientId("");
       setClientSecret("");
@@ -235,6 +244,14 @@ function CloudProviderSection({
     await handleChangeStorageMode(
       event.target.checked ? "customFolder" : "appData"
     );
+  };
+
+  const handleToggleDefaultCloudSaveProvider = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    await updateUserPreferences({
+      defaultCloudSaveProvider: event.target.checked ? provider.id : null,
+    });
   };
 
   const handleCustomPathChange = (
@@ -356,7 +373,7 @@ function CloudProviderSection({
             </div>
           )}
 
-          {!isConnected && (
+          {!isConnected && !hasEnvAppCredentials && (
             <div className="settings-cloud__setup-section">
               <button
                 type="button"
@@ -405,7 +422,7 @@ function CloudProviderSection({
             </div>
           )}
 
-          {!isConnected && (
+          {!isConnected && !hasEnvAppCredentials && (
             <div className="settings-cloud__credential-fields">
               <TextField
                 label={provider.clientIdLabel}
@@ -426,6 +443,20 @@ function CloudProviderSection({
           )}
 
           <div className="settings-cloud__storage-options">
+            <CheckboxField
+              checked={isDefaultCloudSaveProvider}
+              onChange={handleToggleDefaultCloudSaveProvider}
+              disabled={isLoading || !isConnected}
+              label={
+                <span className="settings-cloud__checkbox-label">
+                  <strong>Use as default service for saves</strong>
+                  <small>
+                    New game save settings can use this provider by default.
+                  </small>
+                </span>
+              }
+            />
+
             <CheckboxField
               checked={storageMode === "customFolder"}
               onChange={handleToggleCustomFolder}
@@ -508,6 +539,16 @@ export function SettingsCloud() {
   );
   const { updateUserPreferences } = useContext(settingsContext);
   const { showSuccessToast, showErrorToast } = useToast();
+  const [appCredentialsConfig, setAppCredentialsConfig] = useState<
+    CloudProviderAppCredentialsConfig[]
+  >([]);
+
+  useEffect(() => {
+    window.electron
+      .getCloudProviderAppCredentialsConfig()
+      .then(setAppCredentialsConfig)
+      .catch(() => setAppCredentialsConfig([]));
+  }, []);
 
   return (
     <div className="settings-cloud">
@@ -522,6 +563,10 @@ export function SettingsCloud() {
           provider={provider}
           userPreferences={userPreferences}
           updateUserPreferences={updateUserPreferences}
+          hasEnvAppCredentials={
+            appCredentialsConfig.find((config) => config.id === provider.id)
+              ?.hasEnvAppCredentials ?? false
+          }
           authenticate={(credentials) =>
             window.electron[provider.authenticateMethod](credentials)
           }

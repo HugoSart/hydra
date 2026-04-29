@@ -7,6 +7,11 @@ import {
   encryptCloudProviderSecret,
 } from "../cloud-provider-credentials";
 import {
+  getCloudProviderEnvAppCredentials,
+  resolveCloudProviderAppCredentials,
+  resolveCloudProviderRedirectUri,
+} from "../cloud-provider-app-credentials";
+import {
   CLOUD_SYNC_MANIFEST_FILE_NAME,
   DEFAULT_EXTERNAL_CLOUD_ROOT_FOLDER,
   type CloudSyncManifest,
@@ -21,6 +26,7 @@ import {
 } from "../oauth-callback-server";
 
 const PROVIDER_NAME = "Dropbox";
+const PROVIDER_ID = "dropbox";
 const DROPBOX_AUTHORIZE_URL = "https://www.dropbox.com/oauth2/authorize";
 const DROPBOX_TOKEN_URL = "https://api.dropbox.com/oauth2/token";
 const DROPBOX_API_URL = "https://api.dropboxapi.com/2";
@@ -54,11 +60,16 @@ interface DropboxMetadataResponse {
 }
 
 const getDropboxOAuthConfig = (credentials: CloudProviderAuthCredentials) => {
-  const clientId = credentials.clientId.trim();
-  const clientSecret = credentials.clientSecret.trim();
-  const redirectUri =
-    import.meta.env.MAIN_VITE_DROPBOX_REDIRECT_URI ??
-    `http://127.0.0.1:${DEFAULT_REDIRECT_PORT}${CALLBACK_PATH}`;
+  const resolvedCredentials = resolveCloudProviderAppCredentials(
+    PROVIDER_ID,
+    credentials
+  );
+  const clientId = resolvedCredentials.clientId.trim();
+  const clientSecret = resolvedCredentials.clientSecret.trim();
+  const redirectUri = resolveCloudProviderRedirectUri(
+    PROVIDER_ID,
+    `http://127.0.0.1:${DEFAULT_REDIRECT_PORT}${CALLBACK_PATH}`
+  );
 
   if (!clientId || !clientSecret) {
     throw new Error("Dropbox OAuth app is not configured");
@@ -69,12 +80,13 @@ const getDropboxOAuthConfig = (credentials: CloudProviderAuthCredentials) => {
 
 const getDropboxCredentials = (
   userPreferences: UserPreferences | null
-): CloudProviderAuthCredentials => ({
-  clientId: userPreferences?.dropboxAppKey ?? "",
-  clientSecret: userPreferences?.dropboxAppSecret
-    ? decryptCloudProviderSecret(userPreferences.dropboxAppSecret)
-    : "",
-});
+): CloudProviderAuthCredentials =>
+  getCloudProviderEnvAppCredentials(PROVIDER_ID) ?? {
+    clientId: userPreferences?.dropboxAppKey ?? "",
+    clientSecret: userPreferences?.dropboxAppSecret
+      ? decryptCloudProviderSecret(userPreferences.dropboxAppSecret)
+      : "",
+  };
 
 const getDropboxCallbackError = (callbackUrl: URL) => {
   const error = callbackUrl.searchParams.get("error");
@@ -493,6 +505,8 @@ export const dropboxProviderStrategy = new DropboxProviderStrategy();
 
 export class DropboxService {
   public static async authenticate(credentials: CloudProviderAuthCredentials) {
+    const hasEnvAppCredentials =
+      getCloudProviderEnvAppCredentials(PROVIDER_ID) !== null;
     const { clientId, clientSecret, redirectUri } =
       getDropboxOAuthConfig(credentials);
     const state = createOAuthState();
@@ -538,7 +552,9 @@ export class DropboxService {
         return {
           refreshToken: tokens.refreshToken,
           accountEmail,
-          clientSecret: encryptCloudProviderSecret(clientSecret),
+          clientSecret: hasEnvAppCredentials
+            ? null
+            : encryptCloudProviderSecret(clientSecret),
         };
       },
     });

@@ -132,6 +132,7 @@ export interface UserPreferences {
   dropboxAccountEmail?: string | null;
   dropboxStorageMode?: CloudStorageMode;
   dropboxCustomPath?: string | null;
+  defaultCloudSaveProvider?: CloudSaveProvider | null;
   preferQuitInsteadOfHiding?: boolean;
   runAtStartup?: boolean;
   startMinimized?: boolean;

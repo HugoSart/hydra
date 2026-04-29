@@ -23,7 +23,11 @@ import type {
   ProtonVersion,
   TorrentFilesResponse,
 } from "@types";
-import type { AuthPage, CloudProviderAuthCredentials } from "@shared";
+import type {
+  AuthPage,
+  CloudProviderAuthCredentials,
+  CloudProviderAppCredentialsConfig,
+} from "@shared";
 import type { AxiosProgressEvent } from "axios";
 
 contextBridge.exposeInMainWorld("electron", {
@@ -124,6 +128,10 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("authenticateGoogleDrive", credentials),
   authenticateDropbox: (credentials: CloudProviderAuthCredentials) =>
     ipcRenderer.invoke("authenticateDropbox", credentials),
+  getCloudProviderAppCredentialsConfig: () =>
+    ipcRenderer.invoke("getCloudProviderAppCredentialsConfig") as Promise<
+      CloudProviderAppCredentialsConfig[]
+    >,
 
   /* Download sources */
   addDownloadSource: (url: string) =>

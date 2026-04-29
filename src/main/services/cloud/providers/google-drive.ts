@@ -10,6 +10,11 @@ import {
   encryptCloudProviderSecret,
 } from "../cloud-provider-credentials";
 import {
+  getCloudProviderEnvAppCredentials,
+  resolveCloudProviderAppCredentials,
+  resolveCloudProviderRedirectUri,
+} from "../cloud-provider-app-credentials";
+import {
   CLOUD_SYNC_MANIFEST_FILE_NAME,
   DEFAULT_EXTERNAL_CLOUD_ROOT_FOLDER,
   type CloudSyncManifest,
@@ -24,6 +29,7 @@ import {
 } from "../oauth-callback-server";
 
 const PROVIDER_NAME = "Google Drive";
+const PROVIDER_ID = "googleDrive";
 const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const GOOGLE_DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const GOOGLE_IDENTITY_SCOPES = ["openid", "email", "profile"];
@@ -38,11 +44,16 @@ const FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
 const getGoogleDriveOAuthConfig = (
   credentials: CloudProviderAuthCredentials
 ) => {
-  const clientId = credentials.clientId.trim();
-  const clientSecret = credentials.clientSecret.trim();
-  const redirectUri =
-    import.meta.env.MAIN_VITE_GOOGLE_DRIVE_REDIRECT_URI ??
-    `http://127.0.0.1:${DEFAULT_REDIRECT_PORT}${CALLBACK_PATH}`;
+  const resolvedCredentials = resolveCloudProviderAppCredentials(
+    PROVIDER_ID,
+    credentials
+  );
+  const clientId = resolvedCredentials.clientId.trim();
+  const clientSecret = resolvedCredentials.clientSecret.trim();
+  const redirectUri = resolveCloudProviderRedirectUri(
+    PROVIDER_ID,
+    `http://127.0.0.1:${DEFAULT_REDIRECT_PORT}${CALLBACK_PATH}`
+  );
 
   if (!clientId || !clientSecret) {
     throw new Error("Google Drive OAuth client is not configured");
@@ -53,12 +64,13 @@ const getGoogleDriveOAuthConfig = (
 
 const getGoogleDriveCredentials = (
   userPreferences: UserPreferences | null
-): CloudProviderAuthCredentials => ({
-  clientId: userPreferences?.googleDriveClientId ?? "",
-  clientSecret: userPreferences?.googleDriveClientSecret
-    ? decryptCloudProviderSecret(userPreferences.googleDriveClientSecret)
-    : "",
-});
+): CloudProviderAuthCredentials =>
+  getCloudProviderEnvAppCredentials(PROVIDER_ID) ?? {
+    clientId: userPreferences?.googleDriveClientId ?? "",
+    clientSecret: userPreferences?.googleDriveClientSecret
+      ? decryptCloudProviderSecret(userPreferences.googleDriveClientSecret)
+      : "",
+  };
 
 const getGoogleDriveCallbackError = (callbackUrl: URL) => {
   const error = callbackUrl.searchParams.get("error");
@@ -416,6 +428,8 @@ export const googleDriveProviderStrategy = new GoogleDriveProviderStrategy();
 
 export class GoogleDriveService {
   public static async authenticate(credentials: CloudProviderAuthCredentials) {
+    const hasEnvAppCredentials =
+      getCloudProviderEnvAppCredentials(PROVIDER_ID) !== null;
     const { clientId, clientSecret, redirectUri } =
       getGoogleDriveOAuthConfig(credentials);
     const oauth2Client = new google.auth.OAuth2(
@@ -480,7 +494,9 @@ export class GoogleDriveService {
         return {
           refreshToken: tokens.refresh_token,
           accountEmail,
-          clientSecret: encryptCloudProviderSecret(clientSecret),
+          clientSecret: hasEnvAppCredentials
+            ? null
+            : encryptCloudProviderSecret(clientSecret),
         };
       },
     });

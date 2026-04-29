@@ -6,6 +6,17 @@ export interface CloudProviderAuthCredentials {
   clientSecret: string;
 }
 
+export interface CloudProviderAuthenticationResult {
+  refreshToken: string;
+  accountEmail: string;
+  clientSecret: string | null;
+}
+
+export interface CloudProviderAppCredentialsConfig {
+  id: CloudSaveProvider;
+  hasEnvAppCredentials: boolean;
+}
+
 export interface CloudProviderMetadata {
   id: CloudSaveProvider;
   label: string;
