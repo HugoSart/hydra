@@ -10,7 +10,7 @@ const getCloudProviderEnvValue = (
   suffix: "APP_ID" | "APP_SECRET" | "REDIRECT_URI"
 ) => {
   const envProviderId = toEnvProviderId(providerId);
-  const envKey = `MAIN_VITE_CLOUD_SERVICE_${envProviderId}_${suffix}`;
+  const envKey = `MAIN_VITE_CLOUD_SERVICE_${envProviderId}_$K{suffix}`;
   return (
     (import.meta.env as Record<string, string | undefined>)[envKey]?.trim() ??
     ""
@@ -25,7 +25,7 @@ export const getCloudProviderEnvAppCredentials = (
 
   if (!clientId || !clientSecret) {
     return null;
-  }
+  }git
 
   return { clientId, clientSecret };
 };
