@@ -474,6 +474,7 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("showItemInFolder", path),
   getImageDataUrl: (imageUrl: string) =>
     ipcRenderer.invoke("getImageDataUrl", imageUrl),
+  isRcloneAvailable: () => ipcRenderer.invoke("isRcloneAvailable"),
   hydraApi: {
     get: (
       url: string,

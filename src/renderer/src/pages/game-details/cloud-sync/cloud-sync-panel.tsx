@@ -287,10 +287,13 @@ export function CloudSyncPanel({
       {artifacts.length > 0 ? (
         <ul className="cloud-sync-panel__artifacts">
           {orderBy(artifacts, [(a) => !a.isFrozen], ["asc"]).map((artifact) => {
+            const artifactDate = isHydraCloudProvider
+              ? artifact.createdAt
+              : artifact.updatedAt;
             const artifactName =
               artifact.label ??
               t("backup_from", {
-                date: formatDate(artifact.createdAt),
+                date: formatDate(artifactDate),
               });
 
             return (
@@ -341,7 +344,7 @@ export function CloudSyncPanel({
 
                   <span className="cloud-sync-panel__artifact-meta">
                     <ClockIcon size={14} />
-                    {formatDateTime(artifact.createdAt)}
+                    {formatDateTime(artifactDate)}
                   </span>
                 </div>
 

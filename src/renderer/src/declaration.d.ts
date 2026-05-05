@@ -376,6 +376,7 @@ declare global {
     ) => Promise<Electron.OpenDialogReturnValue>;
     showItemInFolder: (path: string) => Promise<void>;
     getImageDataUrl: (imageUrl: string) => Promise<string | null>;
+    isRcloneAvailable: () => Promise<boolean>;
     hydraApi: {
       get: <T = unknown>(
         url: string,

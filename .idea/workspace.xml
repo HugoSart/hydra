@@ -12,20 +12,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="87cdbbce-2ae0-4531-9ce4-c2068bb8e4c7" name="Changes" comment="Improvements.">
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/cloud-save-provider.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/get-game-artifacts.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/misc/is-rclone-available.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/helpers/is-rclone-available.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/renderer/src/pages/settings/settings-cloud-saves.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/download-game-artifact.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/events/cloud-save/download-game-artifact.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/events/cloud-save/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/list-ludusavi-game-backups.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/restore-ludusavi-cloud-backup.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/upload-ludusavi-cloud-backup.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/upload-save-game.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/events/cloud-save/upload-save-game.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/events/misc/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/events/misc/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/preload/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/preload/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/renderer/src/context/cloud-sync/cloud-sync.context.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/context/cloud-sync/cloud-sync.context.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/renderer/src/declaration.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/declaration.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.scss" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.scss" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/settings/settings-context-integrations.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/settings/settings-context-integrations.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +28,6 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="1454" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -95,39 +89,40 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feat/ludusavi-cloud&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;W:/Workspace/Projects/IdeaProjects/hydra/env&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
-    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
-    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
-    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;W:\\Workspace\\Projects\\IdeaProjects\\hydra\\node_modules\\prettier&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.AcpAgentsConfigurable&quot;,
-    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\hugo_\\AppData\\Local\\Programs\\IntelliJ IDEA Ultimate\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "feat/ludusavi-cloud",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "W:/Workspace/Projects/IdeaProjects/hydra/src/main/helpers",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "yarn",
+    "npm.dev.executor": "Run",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "org.rust.first.attach.projects": "true",
+    "prettierjs.PrettierConfiguration.Package": "W:\\Workspace\\Projects\\IdeaProjects\\hydra\\node_modules\\prettier",
+    "settings.editor.selected.configurable": "ml.llm.AcpAgentsConfigurable",
+    "show.migrate.to.gradle.popup": "false",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Users\\hugo_\\AppData\\Local\\Programs\\IntelliJ IDEA Ultimate\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="W:\Workspace\Projects\IdeaProjects\hydra\src\main\helpers" />
       <recent name="W:\Workspace\Projects\IdeaProjects\hydra\env" />
       <recent name="W:\Workspace\Projects\IdeaProjects\hydra\src\renderer\src\pages\settings" />
     </key>
@@ -163,7 +158,8 @@
       <workItem from="1777500356486" duration="3000" />
       <workItem from="1777501152060" duration="2021000" />
       <workItem from="1777503196099" duration="6241000" />
-      <workItem from="1777934332956" duration="6828000" />
+      <workItem from="1777934332956" duration="7540000" />
+      <workItem from="1777949390255" duration="4927000" />
     </task>
     <task id="LOCAL-00001" summary="Add google drive connection.">
       <option name="closed" value="true" />
@@ -365,7 +361,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777938670802</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="Improvements.">
+      <option name="closed" value="true" />
+      <created>1777941231856</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1777941231856</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
