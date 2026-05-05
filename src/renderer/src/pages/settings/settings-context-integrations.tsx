@@ -13,7 +13,7 @@ export function SettingsContextIntegrations() {
       </div>
 
       <div className="settings-context-panel__group">
-        <h3>Cloud saves (experimental)</h3>
+        <h3>{t("cloud_saves_experimental")}</h3>
         <SettingsCloudSaves />
       </div>
     </div>

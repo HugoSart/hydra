@@ -786,7 +786,20 @@
     "downloads": "Unduhan",
     "create_shortcuts_on_download": "Buat pintasan desktop dan Start Menu saat game selesai diunduh",
     "default_proton_version": "Versi Proton default",
-    "default_proton_version_description": "Pilih versi Proton yang digunakan oleh mode Otomatis saat game tidak memiliki pengaturan kustom"
+    "default_proton_version_description": "Pilih versi Proton yang digunakan oleh mode Otomatis saat game tidak memiliki pengaturan kustom",
+    "cloud_saves_experimental": "Cloud saves (experimental)",
+    "checking_rclone_availability": "Checking rclone availability...",
+    "rclone_required_for_cloud_saves": "rclone must be installed for external cloud saves to work. Check the <link>rclone downloads</link> page for installation instructions.",
+    "cloud_saves_description": "Choose where Hydra should keep your game save backups. Hydra Cloud uses your Hydra account, while external providers use Ludusavi's cloud integration.",
+    "cloud_provider": "Cloud provider",
+    "hydra_cloud_subscription_required": "Hydra Cloud requires an active subscription.",
+    "hydra_cloud_subscription_required_location": "in {{account}} & {{privacy}}.",
+    "cloud_folder": "Cloud folder",
+    "cloud_folder_hint": "Folder inside the selected cloud provider where Ludusavi stores save backups.",
+    "cloud_save_provider_update_failed": "Failed to update cloud save provider",
+    "cloud_folder_update_failed": "Failed to update cloud folder",
+    "dev_subscription_override_enabled": "Development subscription override enabled.",
+    "cloud_write_operations_may_fail": "Cloud write operations may still fail."
   },
   "notifications": {
     "download_complete": "Unduhan selesai",

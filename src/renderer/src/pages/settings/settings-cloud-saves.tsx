@@ -1,9 +1,9 @@
-import { SelectField, TextField } from "@renderer/components";
+import { Link, SelectField, TextField } from "@renderer/components";
 import { settingsContext } from "@renderer/context";
 import { useAppSelector, useToast, useUserDetails } from "@renderer/hooks";
 import { logger } from "@renderer/logger";
 import { useContext, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 
 const hydraCloudProviderId = "hydra-cloud";
 
@@ -199,7 +199,7 @@ export function SettingsCloudSaves() {
     } catch (err) {
       logger.error("Failed to update cloud save provider", err);
       setSelectedCloudProviderId(previousProviderId);
-      showErrorToast("Failed to update cloud save provider");
+      showErrorToast(t("cloud_save_provider_update_failed"));
     } finally {
       setIsSavingCloudProvider(false);
     }
@@ -228,7 +228,7 @@ export function SettingsCloudSaves() {
     } catch (err) {
       logger.error("Failed to update Ludusavi cloud path", err);
       setCloudPath(savedCloudPath);
-      showErrorToast("Failed to update cloud folder");
+      showErrorToast(t("cloud_folder_update_failed"));
     } finally {
       setIsSavingCloudPath(false);
     }
@@ -243,7 +243,7 @@ export function SettingsCloudSaves() {
           lineHeight: 1.6,
         }}
       >
-        Checking rclone availability...
+        {t("checking_rclone_availability")}
       </p>
     );
   }
@@ -257,24 +257,13 @@ export function SettingsCloudSaves() {
           lineHeight: 1.6,
         }}
       >
-        rclone must be installed for external cloud saves to work. Check the{" "}
-        <button
-          type="button"
-          style={{
-            color: "var(--color-primary)",
-            textDecoration: "underline",
-            padding: 0,
-            border: 0,
-            background: "transparent",
-            cursor: "pointer",
+        <Trans
+          i18nKey="rclone_required_for_cloud_saves"
+          ns="settings"
+          components={{
+            link: <Link to="https://rclone.org/downloads/" />,
           }}
-          onClick={() =>
-            window.electron.openExternal("https://rclone.org/downloads/")
-          }
-        >
-          rclone downloads
-        </button>{" "}
-        page for installation instructions.
+        />
       </p>
     );
   }
@@ -288,13 +277,11 @@ export function SettingsCloudSaves() {
           lineHeight: 1.6,
         }}
       >
-        Choose where Hydra should keep your game save backups. Hydra Cloud uses
-        your Hydra account, while external providers use Ludusavi&apos;s cloud
-        integration.
+        {t("cloud_saves_description")}
       </p>
 
       <SelectField
-        label="Cloud provider"
+        label={t("cloud_provider")}
         value={selectedCloudProviderId}
         options={cloudProviderOptions}
         onChange={handleCloudProviderChange}
@@ -303,17 +290,20 @@ export function SettingsCloudSaves() {
 
       {shouldShowHydraCloudMessage && (
         <small>
-          Hydra Cloud requires an active subscription. {t("become_subscriber")}{" "}
-          in {t("account")} & {t("privacy")}.
+          {t("hydra_cloud_subscription_required")} {t("become_subscriber")}{" "}
+          {t("hydra_cloud_subscription_required_location", {
+            account: t("account"),
+            privacy: t("privacy"),
+          })}
         </small>
       )}
 
       {shouldShowCloudPathInput && (
         <TextField
-          label="Cloud folder"
+          label={t("cloud_folder")}
           value={cloudPath}
           disabled={isSavingCloudPath}
-          hint="Folder inside the selected cloud provider where Ludusavi stores save backups."
+          hint={t("cloud_folder_hint")}
           onChange={(event) => setCloudPath(event.target.value)}
           onBlur={saveCloudPath}
           onKeyDown={(event) => {

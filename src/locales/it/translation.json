@@ -763,7 +763,20 @@
     "proton_version_auto": "Auto (global default or umu default)",
     "proton_source_umu_default": "umu default selection",
     "proton_source_steam": "Installed by Steam",
-    "proton_source_compatibility_tools": "Installed in Steam compatibilitytools.d"
+    "proton_source_compatibility_tools": "Installed in Steam compatibilitytools.d",
+    "cloud_saves_experimental": "Cloud saves (experimental)",
+    "checking_rclone_availability": "Checking rclone availability...",
+    "rclone_required_for_cloud_saves": "rclone must be installed for external cloud saves to work. Check the <link>rclone downloads</link> page for installation instructions.",
+    "cloud_saves_description": "Choose where Hydra should keep your game save backups. Hydra Cloud uses your Hydra account, while external providers use Ludusavi's cloud integration.",
+    "cloud_provider": "Cloud provider",
+    "hydra_cloud_subscription_required": "Hydra Cloud requires an active subscription.",
+    "hydra_cloud_subscription_required_location": "in {{account}} & {{privacy}}.",
+    "cloud_folder": "Cloud folder",
+    "cloud_folder_hint": "Folder inside the selected cloud provider where Ludusavi stores save backups.",
+    "cloud_save_provider_update_failed": "Failed to update cloud save provider",
+    "cloud_folder_update_failed": "Failed to update cloud folder",
+    "dev_subscription_override_enabled": "Development subscription override enabled.",
+    "cloud_write_operations_may_fail": "Cloud write operations may still fail."
   },
   "notifications": {
     "download_complete": "Download completato",

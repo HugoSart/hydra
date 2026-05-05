@@ -101,8 +101,8 @@ export function SettingsAccount() {
       return {
         description: (
           <>
-            <small>Development subscription override enabled.</small>
-            <small>Cloud write operations may still fail.</small>
+            <small>{t("dev_subscription_override_enabled")}</small>
+            <small>{t("cloud_write_operations_may_fail")}</small>
           </>
         ),
         callToAction: t("manage_subscription"),
