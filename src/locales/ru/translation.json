@@ -19,6 +19,7 @@
     "my_library": "Библиотека",
     "collections": "Коллекции",
     "games": "Игры",
+    "big_picture": "Big Picture (beta)",
     "downloading_metadata": "{{title}} (Загрузка метаданных…)",
     "paused": "{{title}} (Приостановлено)",
     "downloading": "{{title}} ({{percentage}} - Загрузка…)",
@@ -393,8 +394,10 @@
     "run_with_mangohud": "Автоматически запускать с MangoHud",
     "run_with_mangohud_prefix": "Автоматически запускать с",
     "mangohud_not_available_tooltip": "MangoHud недоступен в вашем PATH",
+    "mangohud_disabled_due_to_global_setting_tooltip": "Эта опция отключена, потому что MangoHud включён глобально",
     "run_with_gamemode_prefix": "Автоматически запускать с",
     "gamemode_not_available_tooltip": "GameMode недоступен в вашем PATH",
+    "gamemode_disabled_due_to_global_setting_tooltip": "Эта опция отключена, потому что GameMode включён глобально",
     "auto_run_inherit_global": "Использовать глобальную настройку",
     "auto_run_enabled": "Включено",
     "auto_run_disabled": "Отключено",
@@ -483,6 +486,7 @@
     "game_removed_from_pinned": "Игра удалена из закрепленных",
     "game_added_to_pinned": "Игра добавлена в закрепленные",
     "automatically_extract_downloaded_files": "Автоматическая распаковка загруженных файлов",
+    "delete_archive_files_after_extraction": "Всегда удалять архивные файлы после извлечения",
     "create_start_menu_shortcut": "Создать ярлык в меню «Пуск»",
     "invalid_wine_prefix_path": "Недопустимый путь префикса Wine",
     "invalid_wine_prefix_path_description": "Путь к префиксу Wine недействителен. Пожалуйста, проверьте путь и попробуйте снова.",
@@ -629,6 +633,7 @@
     "move_down": "Переместить вниз"
   },
   "settings": {
+    "current_username": "Имя пользователя:",
     "downloads_path": "Путь загрузок",
     "change": "Изменить",
     "notifications": "Уведомления",
@@ -712,6 +717,7 @@
     "enable_achievement_notifications": "Когда достижение разблокировано",
     "launch_minimized": "Запускать Hydra в свернутом виде",
     "launch_hydra_in_library_page": "Запускать Hydra на странице библиотеки",
+    "launch_hydra_in_big_picture": "Запускать Hydra в режиме Big Picture (экспериментальная функция)",
     "disable_nsfw_alert": "Отключить предупреждение о непристойном контенте",
     "seed_after_download_complete": "Раздавать после завершения загрузки",
     "show_hidden_achievement_description": "Показывать описание скрытых достижений перед их получением",
@@ -794,6 +800,7 @@
     "max_download_speed_unit_megabits": "Mbps",
     "max_download_speed_unlimited": "Без ограничений",
     "extract_files_by_default": "Извлекать файлы по умолчанию после загрузки",
+    "delete_archive_files_after_extraction": "Всегда удалять архивные файлы после извлечения",
     "enable_steam_achievements": "Включить поиск достижений Steam",
     "enable_new_download_options_badges": "Показывать значки новых вариантов загрузки",
     "achievement_custom_notification_position": "Позиция уведомлений достижений",
@@ -831,8 +838,7 @@
     "proton_version_auto": "Авто (глобальное значение по умолчанию или значение umu по умолчанию)",
     "proton_source_umu_default": "выбор umu по умолчанию",
     "proton_source_steam": "Установлено через Steam",
-    "proton_source_compatibility_tools": "Установлено в Steam compatibilitytools.d",
-    "resume_seeding": "Возобновить раздачу"
+    "proton_source_compatibility_tools": "Установлено в Steam compatibilitytools.d"
   },
   "notifications": {
     "download_complete": "Загрузка завершена",

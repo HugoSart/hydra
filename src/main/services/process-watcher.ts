@@ -8,7 +8,7 @@ import { logger, networkLogger } from "./logger";
 import { PowerSaveBlockerManager } from "./power-save-blocker";
 import path from "node:path";
 import { AchievementWatcherManager } from "./achievements/achievement-watcher-manager";
-import { MAIN_LOOP_INTERVAL } from "@main/constants";
+import { INTERVALS } from "@main/constants";
 import { Wine } from "./wine";
 import { NativeAddon } from "./native-addon";
 
@@ -34,7 +34,7 @@ interface LinuxProcessInfo {
   steamCompatDataPath: string | null;
 }
 
-const TICKS_TO_UPDATE_API = (3 * 60 * 1000) / MAIN_LOOP_INTERVAL; // 3 minutes
+const TICKS_TO_UPDATE_API = (3 * 60 * 1000) / INTERVALS.processWatcher; // 3 minutes
 let currentTick = 1;
 
 const platform = process.platform;
@@ -143,38 +143,17 @@ const findGamePathByProcess = async (
 };
 
 const getSystemProcessMap = async () => {
-  const processes = NativeAddon.listProcesses();
+  const {
+    processMap: rawMap,
+    winePrefixMap: rawWineMap,
+    linuxProcesses,
+  } = await NativeAddon.getSystemProcessMap();
 
-  const processMap = new Map<string, Set<string>>();
-  const winePrefixMap = new Map<string, string>();
-  const linuxProcesses: LinuxProcessInfo[] = [];
+  const processMap = new Map<string, Set<string>>(
+    Object.entries(rawMap).map(([k, v]) => [k, new Set(v)])
+  );
 
-  processes.forEach((process) => {
-    const key = process.name?.toLowerCase();
-    const value =
-      platform === "win32"
-        ? process.exe
-        : path.join(process.cwd ?? "", process.name ?? "");
-
-    if (!key || !value) return;
-
-    const STEAM_COMPAT_DATA_PATH = process.environ?.STEAM_COMPAT_DATA_PATH;
-    if (STEAM_COMPAT_DATA_PATH) {
-      winePrefixMap.set(value, STEAM_COMPAT_DATA_PATH);
-    }
-
-    if (platform === "linux") {
-      linuxProcesses.push({
-        name: key,
-        cwd: (process.cwd ?? "").toLowerCase(),
-        exe: (process.exe ?? "").toLowerCase(),
-        steamCompatDataPath: STEAM_COMPAT_DATA_PATH?.toLowerCase() ?? null,
-      });
-    }
-
-    const currentSet = processMap.get(key) ?? new Set();
-    processMap.set(key, currentSet.add(value));
-  });
+  const winePrefixMap = new Map<string, string>(Object.entries(rawWineMap));
 
   return { processMap, winePrefixMap, linuxProcesses };
 };
