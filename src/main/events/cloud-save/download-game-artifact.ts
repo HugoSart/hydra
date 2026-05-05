@@ -2,6 +2,7 @@ import {
   CloudSync,
   HydraApi,
   logger,
+  Ludusavi,
   WindowManager,
   Wine,
 } from "@main/services";
@@ -17,6 +18,10 @@ import YAML from "yaml";
 import { addTrailingSlash, normalizePath } from "@main/helpers";
 import { SystemPath } from "@main/services/system-path";
 import { gamesSublevel, levelKeys } from "@main/level";
+import {
+  getActiveCloudProviderId,
+  isHydraCloudProvider,
+} from "./cloud-save-provider";
 
 export const transformLudusaviBackupPathIntoWindowsPath = (
   backupPath: string,
@@ -102,6 +107,29 @@ const downloadGameArtifact = async (
   shop: GameShop,
   gameArtifactId: string
 ) => {
+  const activeCloudProviderId = await getActiveCloudProviderId();
+
+  if (!isHydraCloudProvider(activeCloudProviderId)) {
+    try {
+      await Ludusavi.downloadCloudBackups(objectId);
+      await Ludusavi.restoreGame(objectId, gameArtifactId);
+
+      WindowManager.mainWindow?.webContents.send(
+        `on-backup-download-complete-${objectId}-${shop}`,
+        true
+      );
+    } catch (err) {
+      logger.error("Failed to restore Ludusavi cloud backup", err);
+
+      WindowManager.mainWindow?.webContents.send(
+        `on-backup-download-complete-${objectId}-${shop}`,
+        false
+      );
+    }
+
+    return;
+  }
+
   try {
     const game = await gamesSublevel.get(levelKeys.game(shop, objectId));
     const effectiveWinePrefixPath = Wine.getEffectivePrefixPath(

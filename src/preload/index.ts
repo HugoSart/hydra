@@ -395,21 +395,6 @@ contextBridge.exposeInMainWorld("electron", {
     gameArtifactId: string
   ) =>
     ipcRenderer.invoke("downloadGameArtifact", objectId, shop, gameArtifactId),
-  uploadLudusaviCloudBackup: (objectId: string, shop: GameShop) =>
-    ipcRenderer.invoke("uploadLudusaviCloudBackup", objectId, shop),
-  restoreLudusaviCloudBackup: (
-    objectId: string,
-    shop: GameShop,
-    backupName?: string
-  ) =>
-    ipcRenderer.invoke(
-      "restoreLudusaviCloudBackup",
-      objectId,
-      shop,
-      backupName
-    ),
-  listLudusaviGameBackups: (objectId: string, shop: GameShop) =>
-    ipcRenderer.invoke("listLudusaviGameBackups", objectId, shop),
   getGameArtifacts: (objectId: string, shop: GameShop) =>
     ipcRenderer.invoke("getGameArtifacts", objectId, shop),
   getGameBackupPreview: (objectId: string, shop: GameShop) =>

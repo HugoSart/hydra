@@ -12,25 +12,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="87cdbbce-2ae0-4531-9ce4-c2068bb8e4c7" name="Changes" comment="Improvements.">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/env/client_secret_271824208369-l9c8sm3ts2kjfrgogv1k4kdd2j6ojr6a.apps.googleusercontent.com.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/clear-ludusavi-cloud-provider.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/get-current-ludusavi-cloud-provider.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/get-ludusavi-cloud-path.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/list-ludusavi-cloud-providers.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/list-ludusavi-game-backups.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/restore-ludusavi-cloud-backup.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/set-ludusavi-cloud-path.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/set-ludusavi-cloud-provider.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/upload-ludusavi-cloud-backup.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/renderer/src/hooks/use-user-details.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/hooks/use-user-details.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/cloud-save-provider.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/get-game-artifacts.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/download-game-artifact.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/events/cloud-save/download-game-artifact.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/events/cloud-save/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/list-ludusavi-game-backups.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/restore-ludusavi-cloud-backup.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/upload-ludusavi-cloud-backup.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/events/cloud-save/upload-save-game.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/events/cloud-save/upload-save-game.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/preload/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/preload/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/context/cloud-sync/cloud-sync.context.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/context/cloud-sync/cloud-sync.context.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/declaration.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/declaration.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.scss" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.scss" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal/hydra-cloud-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal/hydra-cloud-section.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/settings/settings-account.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/settings/settings-account.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/renderer/src/vite-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/vite-env.d.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -168,7 +163,7 @@
       <workItem from="1777500356486" duration="3000" />
       <workItem from="1777501152060" duration="2021000" />
       <workItem from="1777503196099" duration="6241000" />
-      <workItem from="1777934332956" duration="5278000" />
+      <workItem from="1777934332956" duration="6828000" />
     </task>
     <task id="LOCAL-00001" summary="Add google drive connection.">
       <option name="closed" value="true" />

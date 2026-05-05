@@ -38,7 +38,6 @@ import type {
   ProtonVersion,
   CreateSteamShortcutOptions,
   TorrentFilesResponse,
-  LudusaviBackupEntry,
 } from "@types";
 import type { AxiosProgressEvent } from "axios";
 
@@ -329,19 +328,6 @@ declare global {
       shop: GameShop,
       gameArtifactId: string
     ) => Promise<void>;
-    uploadLudusaviCloudBackup: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<void>;
-    restoreLudusaviCloudBackup: (
-      objectId: string,
-      shop: GameShop,
-      backupName?: string
-    ) => Promise<void>;
-    listLudusaviGameBackups: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<LudusaviBackupEntry[]>;
     getGameArtifacts: (
       objectId: string,
       shop: GameShop
