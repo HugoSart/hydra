@@ -638,7 +638,7 @@ export function GameOptionsModal({
       },
       {
         id: "hydra_cloud" as const,
-        label: t("settings_category_hydra_cloud"),
+        label: "Cloud Saves",
         icon: <CloudIcon size={16} />,
       },
       ...(shouldShowWinePrefixConfiguration
@@ -702,12 +702,15 @@ export function GameOptionsModal({
       gameKey,
       "games"
     )) as Game | null;
-    if (gameData)
+
+    if (gameData) {
       await levelDBService.put(
         gameKey,
         { ...gameData, automaticCloudSync: event.target.checked },
         "games"
       );
+    }
+
     updateGame();
   };
 

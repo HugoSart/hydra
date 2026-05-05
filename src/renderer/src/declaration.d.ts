@@ -38,6 +38,7 @@ import type {
   ProtonVersion,
   CreateSteamShortcutOptions,
   TorrentFilesResponse,
+  LudusaviBackupEntry,
 } from "@types";
 import type { AxiosProgressEvent } from "axios";
 
@@ -328,6 +329,19 @@ declare global {
       shop: GameShop,
       gameArtifactId: string
     ) => Promise<void>;
+    uploadLudusaviCloudBackup: (
+      objectId: string,
+      shop: GameShop
+    ) => Promise<void>;
+    restoreLudusaviCloudBackup: (
+      objectId: string,
+      shop: GameShop,
+      backupName?: string
+    ) => Promise<void>;
+    listLudusaviGameBackups: (
+      objectId: string,
+      shop: GameShop
+    ) => Promise<LudusaviBackupEntry[]>;
     getGameArtifacts: (
       objectId: string,
       shop: GameShop
@@ -336,6 +350,12 @@ declare global {
       objectId: string,
       shop: GameShop
     ) => Promise<LudusaviBackup | null>;
+    listLudusaviCloudProviders: () => Promise<string[]>;
+    getCurrentLudusaviCloudProvider: () => Promise<string | null>;
+    setLudusaviCloudProvider: (providerId: string) => Promise<void>;
+    clearLudusaviCloudProvider: () => Promise<void>;
+    getLudusaviCloudPath: () => Promise<string>;
+    setLudusaviCloudPath: (cloudPath: string) => Promise<void>;
     selectGameBackupPath: (
       shop: GameShop,
       objectId: string,
@@ -344,12 +364,12 @@ declare global {
     onBackupDownloadComplete: (
       objectId: string,
       shop: GameShop,
-      cb: () => void
+      cb: (success: boolean) => void
     ) => () => Electron.IpcRenderer;
     onUploadComplete: (
       objectId: string,
       shop: GameShop,
-      cb: () => void
+      cb: (success: boolean) => void
     ) => () => Electron.IpcRenderer;
     onBackupDownloadProgress: (
       objectId: string,

@@ -19,6 +19,7 @@ export function SelectField({
   theme = "primary",
   onChange,
   className,
+  ...props
 }: Readonly<SelectProps>) {
   const [isFocused, setIsFocused] = useState(false);
   const id = useId();
@@ -43,6 +44,7 @@ export function SelectField({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onChange={onChange}
+          {...props}
         >
           {options.map((option) => (
             <option key={option.key} value={option.value}>

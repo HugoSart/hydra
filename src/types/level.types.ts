@@ -144,6 +144,7 @@ export interface UserPreferences {
   defaultProtonPath?: string | null;
   autoRunMangohud?: boolean;
   autoRunGamemode?: boolean;
+  cloudSaveProvider?: string;
 }
 
 export interface ScreenState {

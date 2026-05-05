@@ -1,6 +1,11 @@
-import { useToast } from "@renderer/hooks";
+import { useAppSelector, useToast } from "@renderer/hooks";
 import { logger } from "@renderer/logger";
-import type { LudusaviBackup, GameArtifact, GameShop } from "@types";
+import type {
+  LudusaviBackup,
+  GameArtifact,
+  GameShop,
+  LudusaviBackupEntry,
+} from "@types";
 import React, {
   createContext,
   useCallback,
@@ -20,10 +25,15 @@ export enum CloudSyncState {
 export interface CloudSyncContext {
   backupPreview: LudusaviBackup | null;
   artifacts: GameArtifact[];
+  ludusaviBackups: LudusaviBackupEntry[];
+  ludusaviBackupsUpdatedAt: Date | null;
   showCloudSyncFilesModal: boolean;
   backupState: CloudSyncState;
   downloadGameArtifact: (gameArtifactId: string) => Promise<void>;
   uploadSaveGame: (downloadOptionTitle: string | null) => Promise<void>;
+  refreshLudusaviBackups: () => Promise<void>;
+  uploadLudusaviCloudBackup: () => Promise<void>;
+  restoreLudusaviCloudBackup: (backupName?: string) => Promise<void>;
   deleteGameArtifact: (gameArtifactId: string) => Promise<void>;
   setShowCloudSyncFilesModal: React.Dispatch<React.SetStateAction<boolean>>;
   getGameBackupPreview: () => Promise<void>;
@@ -34,6 +44,10 @@ export interface CloudSyncContext {
   ) => Promise<void>;
   restoringBackup: boolean;
   uploadingBackup: boolean;
+  refreshingLudusaviBackups: boolean;
+  uploadingLudusaviBackup: boolean;
+  restoringLudusaviBackup: boolean;
+  isCloudSyncOperationRunning: boolean;
   loadingPreview: boolean;
   freezingArtifact: boolean;
 }
@@ -43,7 +57,12 @@ export const cloudSyncContext = createContext<CloudSyncContext>({
   backupState: CloudSyncState.Unknown,
   downloadGameArtifact: async () => {},
   uploadSaveGame: async () => {},
+  refreshLudusaviBackups: async () => {},
+  uploadLudusaviCloudBackup: async () => {},
+  restoreLudusaviCloudBackup: async () => {},
   artifacts: [],
+  ludusaviBackups: [],
+  ludusaviBackupsUpdatedAt: null,
   deleteGameArtifact: async () => {},
   showCloudSyncFilesModal: false,
   setShowCloudSyncFilesModal: () => {},
@@ -52,6 +71,10 @@ export const cloudSyncContext = createContext<CloudSyncContext>({
   getGameArtifacts: async () => {},
   restoringBackup: false,
   uploadingBackup: false,
+  refreshingLudusaviBackups: false,
+  uploadingLudusaviBackup: false,
+  restoringLudusaviBackup: false,
+  isCloudSyncOperationRunning: false,
   loadingPreview: false,
   freezingArtifact: false,
 });
@@ -65,6 +88,113 @@ export interface CloudSyncContextProviderProps {
   shop: GameShop;
 }
 
+const hydraCloudProviderId = "hydra-cloud";
+const ludusaviBackupsCache = new Map<
+  string,
+  { backups: LudusaviBackupEntry[]; updatedAt: Date }
+>();
+
+type CloudSyncOperationState = {
+  restoringBackup: boolean;
+  uploadingBackup: boolean;
+  refreshingLudusaviBackups: boolean;
+  uploadingLudusaviBackup: boolean;
+  restoringLudusaviBackup: boolean;
+};
+
+type CloudSyncOperationEntry = CloudSyncOperationState & {
+  refreshLudusaviBackupsPromise: Promise<void> | null;
+  uploadLudusaviBackupPromise: Promise<void> | null;
+  restoreLudusaviBackupPromise: Promise<void> | null;
+};
+
+const defaultOperationState: CloudSyncOperationState = {
+  restoringBackup: false,
+  uploadingBackup: false,
+  refreshingLudusaviBackups: false,
+  uploadingLudusaviBackup: false,
+  restoringLudusaviBackup: false,
+};
+
+const cloudSyncOperationStore = new Map<string, CloudSyncOperationEntry>();
+const cloudSyncOperationListeners = new Map<
+  string,
+  Set<(state: CloudSyncOperationState) => void>
+>();
+
+const createOperationEntry = (): CloudSyncOperationEntry => ({
+  ...defaultOperationState,
+  refreshLudusaviBackupsPromise: null,
+  uploadLudusaviBackupPromise: null,
+  restoreLudusaviBackupPromise: null,
+});
+
+const getOperationEntry = (gameKey: string) => {
+  const existingEntry = cloudSyncOperationStore.get(gameKey);
+
+  if (existingEntry) {
+    return existingEntry;
+  }
+
+  const entry = createOperationEntry();
+  cloudSyncOperationStore.set(gameKey, entry);
+
+  return entry;
+};
+
+const getOperationState = (gameKey: string): CloudSyncOperationState => {
+  const entry = cloudSyncOperationStore.get(gameKey);
+
+  if (!entry) {
+    return defaultOperationState;
+  }
+
+  return {
+    restoringBackup: entry.restoringBackup,
+    uploadingBackup: entry.uploadingBackup,
+    refreshingLudusaviBackups: entry.refreshingLudusaviBackups,
+    uploadingLudusaviBackup: entry.uploadingLudusaviBackup,
+    restoringLudusaviBackup: entry.restoringLudusaviBackup,
+  };
+};
+
+const notifyOperationListeners = (gameKey: string) => {
+  const listeners = cloudSyncOperationListeners.get(gameKey);
+
+  if (!listeners) return;
+
+  const state = getOperationState(gameKey);
+  listeners.forEach((listener) => listener(state));
+};
+
+const updateOperationState = (
+  gameKey: string,
+  state: Partial<CloudSyncOperationState>
+) => {
+  Object.assign(getOperationEntry(gameKey), state);
+  notifyOperationListeners(gameKey);
+};
+
+const subscribeToOperationState = (
+  gameKey: string,
+  listener: (state: CloudSyncOperationState) => void
+) => {
+  const listeners =
+    cloudSyncOperationListeners.get(gameKey) ??
+    new Set<(state: CloudSyncOperationState) => void>();
+
+  listeners.add(listener);
+  cloudSyncOperationListeners.set(gameKey, listeners);
+
+  return () => {
+    listeners.delete(listener);
+
+    if (!listeners.size) {
+      cloudSyncOperationListeners.delete(gameKey);
+    }
+  };
+};
+
 export function CloudSyncContextProvider({
   children,
   objectId,
@@ -73,23 +203,42 @@ export function CloudSyncContextProvider({
   const { t } = useTranslation("game_details");
 
   const [artifacts, setArtifacts] = useState<GameArtifact[]>([]);
+  const [ludusaviBackups, setLudusaviBackups] = useState<LudusaviBackupEntry[]>(
+    []
+  );
+  const [ludusaviBackupsUpdatedAt, setLudusaviBackupsUpdatedAt] =
+    useState<Date | null>(null);
   const [backupPreview, setBackupPreview] = useState<LudusaviBackup | null>(
     null
   );
-  const [restoringBackup, setRestoringBackup] = useState(false);
-  const [uploadingBackup, setUploadingBackup] = useState(false);
   const [showCloudSyncFilesModal, setShowCloudSyncFilesModal] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [freezingArtifact, setFreezingArtifact] = useState(false);
+  const [operationState, setOperationState] = useState<CloudSyncOperationState>(
+    () => defaultOperationState
+  );
 
   const { showSuccessToast, showErrorToast } = useToast();
+  const cloudSaveProvider =
+    useAppSelector((state) => state.userPreferences.value?.cloudSaveProvider) ??
+    hydraCloudProviderId;
+  const ludusaviBackupsCacheKey = `${cloudSaveProvider}:${shop}:${objectId}`;
+  const cloudSyncOperationKey = `${shop}:${objectId}`;
+
+  const {
+    restoringBackup,
+    uploadingBackup,
+    refreshingLudusaviBackups,
+    uploadingLudusaviBackup,
+    restoringLudusaviBackup,
+  } = operationState;
 
   const downloadGameArtifact = useCallback(
     async (gameArtifactId: string) => {
-      setRestoringBackup(true);
+      updateOperationState(cloudSyncOperationKey, { restoringBackup: true });
       window.electron.downloadGameArtifact(objectId, shop, gameArtifactId);
     },
-    [objectId, shop]
+    [cloudSyncOperationKey, objectId, shop]
   );
 
   const getGameArtifacts = useCallback(async () => {
@@ -132,16 +281,165 @@ export function CloudSyncContextProvider({
 
   const uploadSaveGame = useCallback(
     async (downloadOptionTitle: string | null) => {
-      setUploadingBackup(true);
+      updateOperationState(cloudSyncOperationKey, { uploadingBackup: true });
       window.electron
         .uploadSaveGame(objectId, shop, downloadOptionTitle)
         .catch((err) => {
-          setUploadingBackup(false);
+          updateOperationState(cloudSyncOperationKey, {
+            uploadingBackup: false,
+          });
           logger.error("Failed to upload save game", { objectId, shop, err });
           showErrorToast(t("backup_failed"));
         });
     },
-    [objectId, shop, t, showErrorToast]
+    [cloudSyncOperationKey, objectId, shop, t, showErrorToast]
+  );
+
+  const refreshLudusaviBackups = useCallback(async () => {
+    const operationEntry = getOperationEntry(cloudSyncOperationKey);
+
+    if (operationEntry.refreshLudusaviBackupsPromise) {
+      return operationEntry.refreshLudusaviBackupsPromise;
+    }
+
+    const refreshPromise = (async () => {
+      updateOperationState(cloudSyncOperationKey, {
+        refreshingLudusaviBackups: true,
+      });
+
+      try {
+        const backups = await window.electron.listLudusaviGameBackups(
+          objectId,
+          shop
+        );
+        const updatedAt = new Date();
+
+        ludusaviBackupsCache.set(ludusaviBackupsCacheKey, {
+          backups,
+          updatedAt,
+        });
+        setLudusaviBackups(backups);
+        setLudusaviBackupsUpdatedAt(updatedAt);
+      } catch (err) {
+        logger.error("Failed to list Ludusavi backups", err);
+        showErrorToast(t("backup_failed"));
+      } finally {
+        updateOperationState(cloudSyncOperationKey, {
+          refreshingLudusaviBackups: false,
+        });
+        getOperationEntry(cloudSyncOperationKey).refreshLudusaviBackupsPromise =
+          null;
+      }
+    })();
+
+    operationEntry.refreshLudusaviBackupsPromise = refreshPromise;
+
+    return refreshPromise;
+  }, [
+    cloudSyncOperationKey,
+    ludusaviBackupsCacheKey,
+    objectId,
+    shop,
+    showErrorToast,
+    t,
+  ]);
+
+  const uploadLudusaviCloudBackup = useCallback(async () => {
+    const operationEntry = getOperationEntry(cloudSyncOperationKey);
+
+    if (operationEntry.uploadLudusaviBackupPromise) {
+      return operationEntry.uploadLudusaviBackupPromise;
+    }
+
+    const uploadPromise = (async () => {
+      updateOperationState(cloudSyncOperationKey, {
+        uploadingLudusaviBackup: true,
+      });
+
+      try {
+        await window.electron.uploadLudusaviCloudBackup(objectId, shop);
+        showSuccessToast(t("backup_uploaded"));
+        updateOperationState(cloudSyncOperationKey, {
+          uploadingLudusaviBackup: false,
+        });
+        await refreshLudusaviBackups();
+      } catch (err) {
+        logger.error("Failed to upload Ludusavi cloud backup", err);
+        showErrorToast(t("backup_failed"));
+      } finally {
+        updateOperationState(cloudSyncOperationKey, {
+          uploadingLudusaviBackup: false,
+        });
+        getOperationEntry(cloudSyncOperationKey).uploadLudusaviBackupPromise =
+          null;
+      }
+    })();
+
+    operationEntry.uploadLudusaviBackupPromise = uploadPromise;
+
+    return uploadPromise;
+  }, [
+    cloudSyncOperationKey,
+    objectId,
+    refreshLudusaviBackups,
+    shop,
+    showErrorToast,
+    showSuccessToast,
+    t,
+  ]);
+
+  const restoreLudusaviCloudBackup = useCallback(
+    async (backupName?: string) => {
+      const operationEntry = getOperationEntry(cloudSyncOperationKey);
+
+      if (operationEntry.restoreLudusaviBackupPromise) {
+        return operationEntry.restoreLudusaviBackupPromise;
+      }
+
+      const restorePromise = (async () => {
+        updateOperationState(cloudSyncOperationKey, {
+          restoringLudusaviBackup: true,
+        });
+
+        try {
+          await window.electron.restoreLudusaviCloudBackup(
+            objectId,
+            shop,
+            backupName
+          );
+          showSuccessToast(t("backup_restored"));
+          updateOperationState(cloudSyncOperationKey, {
+            restoringLudusaviBackup: false,
+          });
+          getGameBackupPreview();
+          await refreshLudusaviBackups();
+        } catch (err) {
+          logger.error("Failed to restore Ludusavi cloud backup", err);
+          showErrorToast(t("backup_failed"));
+        } finally {
+          updateOperationState(cloudSyncOperationKey, {
+            restoringLudusaviBackup: false,
+          });
+          getOperationEntry(
+            cloudSyncOperationKey
+          ).restoreLudusaviBackupPromise = null;
+        }
+      })();
+
+      operationEntry.restoreLudusaviBackupPromise = restorePromise;
+
+      return restorePromise;
+    },
+    [
+      cloudSyncOperationKey,
+      getGameBackupPreview,
+      objectId,
+      refreshLudusaviBackups,
+      shop,
+      showErrorToast,
+      showSuccessToast,
+      t,
+    ]
   );
 
   const toggleArtifactFreeze = useCallback(
@@ -167,21 +465,34 @@ export function CloudSyncContextProvider({
     const removeUploadCompleteListener = window.electron.onUploadComplete(
       objectId,
       shop,
-      () => {
-        showSuccessToast(t("backup_uploaded"));
-        setUploadingBackup(false);
-        getGameArtifacts();
-        getGameBackupPreview();
+      (success) => {
+        updateOperationState(cloudSyncOperationKey, {
+          uploadingBackup: false,
+        });
+
+        if (success) {
+          showSuccessToast(t("backup_uploaded"));
+          getGameArtifacts();
+          getGameBackupPreview();
+        } else {
+          showErrorToast(t("backup_failed"));
+        }
       }
     );
 
     const removeDownloadCompleteListener =
-      window.electron.onBackupDownloadComplete(objectId, shop, () => {
-        showSuccessToast(t("backup_restored"));
+      window.electron.onBackupDownloadComplete(objectId, shop, (success) => {
+        updateOperationState(cloudSyncOperationKey, {
+          restoringBackup: false,
+        });
 
-        setRestoringBackup(false);
-        getGameArtifacts();
-        getGameBackupPreview();
+        if (success) {
+          showSuccessToast(t("backup_restored"));
+          getGameArtifacts();
+          getGameBackupPreview();
+        } else {
+          showErrorToast(t("backup_failed"));
+        }
       });
 
     return () => {
@@ -191,6 +502,8 @@ export function CloudSyncContextProvider({
   }, [
     objectId,
     shop,
+    cloudSyncOperationKey,
+    showErrorToast,
     showSuccessToast,
     t,
     getGameBackupPreview,
@@ -212,9 +525,20 @@ export function CloudSyncContextProvider({
   useEffect(() => {
     setBackupPreview(null);
     setArtifacts([]);
-    setRestoringBackup(false);
-    setUploadingBackup(false);
   }, [objectId, shop]);
+
+  useEffect(() => {
+    const cachedBackups = ludusaviBackupsCache.get(ludusaviBackupsCacheKey);
+
+    setLudusaviBackups(cachedBackups?.backups ?? []);
+    setLudusaviBackupsUpdatedAt(cachedBackups?.updatedAt ?? null);
+  }, [ludusaviBackupsCacheKey]);
+
+  useEffect(() => {
+    setOperationState(getOperationState(cloudSyncOperationKey));
+
+    return subscribeToOperationState(cloudSyncOperationKey, setOperationState);
+  }, [cloudSyncOperationKey]);
 
   const backupState = useMemo(() => {
     if (!backupPreview) return CloudSyncState.Unknown;
@@ -226,18 +550,33 @@ export function CloudSyncContextProvider({
     return CloudSyncState.Unknown;
   }, [backupPreview]);
 
+  const isCloudSyncOperationRunning =
+    uploadingBackup ||
+    restoringBackup ||
+    uploadingLudusaviBackup ||
+    restoringLudusaviBackup;
+
   return (
     <Provider
       value={{
         backupPreview,
         artifacts,
+        ludusaviBackups,
+        ludusaviBackupsUpdatedAt,
         backupState,
         restoringBackup,
         uploadingBackup,
+        refreshingLudusaviBackups,
+        uploadingLudusaviBackup,
+        restoringLudusaviBackup,
+        isCloudSyncOperationRunning,
         showCloudSyncFilesModal,
         loadingPreview,
         freezingArtifact,
         uploadSaveGame,
+        refreshLudusaviBackups,
+        uploadLudusaviCloudBackup,
+        restoreLudusaviCloudBackup,
         downloadGameArtifact,
         deleteGameArtifact,
         setShowCloudSyncFilesModal,

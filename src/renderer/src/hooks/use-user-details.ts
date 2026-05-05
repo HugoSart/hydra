@@ -13,6 +13,25 @@ import type {
   FriendRequest,
 } from "@types";
 
+const devForceAccountSubscriptionStorageKey =
+  "hydra:dev:force-account-subscription";
+
+const isTruthyFlag = (value: string | null | undefined) =>
+  ["1", "true", "yes", "on"].includes(value?.toLowerCase() ?? "");
+
+const isDevSubscriptionOverrideEnabled = () => {
+  if (!import.meta.env.DEV) {
+    return false;
+  }
+
+  return (
+    isTruthyFlag(import.meta.env.RENDERER_VITE_FORCE_ACCOUNT_SUBSCRIPTION) ||
+    isTruthyFlag(
+      window.localStorage.getItem(devForceAccountSubscriptionStorageKey)
+    )
+  );
+};
+
 export function useUserDetails() {
   const dispatch = useAppDispatch();
 
@@ -122,6 +141,10 @@ export function useUserDetails() {
     window.electron.hydraApi.post(`/users/${userId}/unblock`);
 
   const hasActiveSubscription = useMemo(() => {
+    if (isDevSubscriptionOverrideEnabled()) {
+      return true;
+    }
+
     const expiresAt = new Date(userDetails?.subscription?.expiresAt ?? 0);
     return expiresAt > new Date();
   }, [userDetails]);
@@ -132,6 +155,7 @@ export function useUserDetails() {
     friendRequests,
     friendRequestCount,
     hasActiveSubscription,
+    isDevSubscriptionOverrideEnabled: isDevSubscriptionOverrideEnabled(),
     fetchUserDetails,
     signOut,
     clearUserDetails,

@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/native/hydra-native/Cargo.toml">
+      <package file="$PROJECT_DIR$/native/hydra-native">
+        <feature name="default" enabled="true" />
+      </package>
+    </cargoProject>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="87cdbbce-2ae0-4531-9ce4-c2068bb8e4c7" name="Changes" comment="Improvements.">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/env/client_secret_271824208369-l9c8sm3ts2kjfrgogv1k4kdd2j6ojr6a.apps.googleusercontent.com.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/clear-ludusavi-cloud-provider.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/get-current-ludusavi-cloud-provider.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/get-ludusavi-cloud-path.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/list-ludusavi-cloud-providers.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/list-ludusavi-game-backups.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/restore-ludusavi-cloud-backup.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/set-ludusavi-cloud-path.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/set-ludusavi-cloud-provider.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/events/cloud-save/upload-ludusavi-cloud-backup.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/hooks/use-user-details.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/hooks/use-user-details.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.scss" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.scss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/cloud-sync/cloud-sync-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal/hydra-cloud-section.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/game-details/modals/game-options-modal/hydra-cloud-section.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/pages/settings/settings-account.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/pages/settings/settings-account.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/renderer/src/vite-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/renderer/src/vite-env.d.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="1454" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {}
+}</component>
+  <component name="GitHubPullRequestState">{
+  &quot;prStates&quot;: [
+    {
+      &quot;id&quot;: {
+        &quot;id&quot;: &quot;PR_kwDOL1iEfc7VyUWj&quot;,
+        &quot;number&quot;: 1
+      },
+      &quot;lastSeen&quot;: 1777335184111
+    }
+  ]
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/HugoSart/hydra&quot;,
+    &quot;accountId&quot;: &quot;66286285-a92f-4e38-8558-ab3d4edc5b19&quot;
+  },
+  &quot;recentNewPullRequestHead&quot;: {
+    &quot;server&quot;: {
+      &quot;useHttp&quot;: false,
+      &quot;host&quot;: &quot;github.com&quot;,
+      &quot;port&quot;: null,
+      &quot;suffix&quot;: null
+    },
+    &quot;owner&quot;: &quot;HugoSart&quot;,
+    &quot;repository&quot;: &quot;hydra&quot;
+  }
+}</component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="uDWCyhMA" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3Ctol7NNBIHHl2Vj2B2vPIGXKro" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="flattenModules" value="true" />
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feat/ludusavi-cloud&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;W:/Workspace/Projects/IdeaProjects/hydra/env&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
+    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;W:\\Workspace\\Projects\\IdeaProjects\\hydra\\node_modules\\prettier&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.AcpAgentsConfigurable&quot;,
+    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\hugo_\\AppData\\Local\\Programs\\IntelliJ IDEA Ultimate\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="W:\Workspace\Projects\IdeaProjects\hydra\env" />
+      <recent name="W:\Workspace\Projects\IdeaProjects\hydra\src\renderer\src\pages\settings" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="dev" type="js.build_tools.npm" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="87cdbbce-2ae0-4531-9ce4-c2068bb8e4c7" name="Changes" comment="" />
+      <created>1777214374526</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1777214374526</updated>
+      <workItem from="1777214375664" duration="10717000" />
+      <workItem from="1777225568049" duration="482000" />
+      <workItem from="1777240234146" duration="3911000" />
+      <workItem from="1777244741172" duration="3500000" />
+      <workItem from="1777249311620" duration="2253000" />
+      <workItem from="1777327964521" duration="7546000" />
+      <workItem from="1777500356486" duration="3000" />
+      <workItem from="1777501152060" duration="2021000" />
+      <workItem from="1777503196099" duration="6241000" />
+      <workItem from="1777934332956" duration="5278000" />
+    </task>
+    <task id="LOCAL-00001" summary="Add google drive connection.">
+      <option name="closed" value="true" />
+      <created>1777223158429</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1777223158429</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Organize drive service.">
+      <option name="closed" value="true" />
+      <created>1777224440740</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1777224440740</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Organize drive service.">
+      <option name="closed" value="true" />
+      <created>1777224463897</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1777224463897</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Organize drive service.">
+      <option name="closed" value="true" />
+      <created>1777225160255</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1777225160255</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Organize drive service.">
+      <option name="closed" value="true" />
+      <created>1777242528158</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1777242528160</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Organize drive service.">
+      <option name="closed" value="true" />
+      <created>1777243206928</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1777243206928</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Organize drive service.">
+      <option name="closed" value="true" />
+      <created>1777248167434</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1777248167434</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Improve code.">
+      <option name="closed" value="true" />
+      <created>1777249603886</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1777249603886</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Refactor cloud provider.">
+      <option name="closed" value="true" />
+      <created>1777329179003</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1777329179003</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Refactor cloud provider.">
+      <option name="closed" value="true" />
+      <created>1777329723928</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1777329723928</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Refactor cloud provider.">
+      <option name="closed" value="true" />
+      <created>1777331369241</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1777331369241</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Refactor cloud provider.">
+      <option name="closed" value="true" />
+      <created>1777335184031</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1777335184031</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Checkpoint">
+      <option name="closed" value="true" />
+      <created>1777503007390</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1777503007390</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Checkpoint">
+      <option name="closed" value="true" />
+      <created>1777503033829</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1777503033829</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Checkpoint">
+      <option name="closed" value="true" />
+      <created>1777503151497</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1777503151497</updated>
+    </task>
+    <task id="LOCAL-00016" summary="add ludusavi cloud first code.">
+      <option name="closed" value="true" />
+      <created>1777505863186</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1777505863186</updated>
+    </task>
+    <task id="LOCAL-00017" summary="add ludusavi cloud first code.">
+      <option name="closed" value="true" />
+      <created>1777505901058</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1777505901058</updated>
+    </task>
+    <task id="LOCAL-00018" summary="add ludusavi cloud first code.">
+      <option name="closed" value="true" />
+      <created>1777506167763</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1777506167763</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Add feature to set ludusavi cloud.">
+      <option name="closed" value="true" />
+      <created>1777506935501</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1777506935501</updated>
+    </task>
+    <task id="LOCAL-00020" summary="add cloud sync panel in game details.">
+      <option name="closed" value="true" />
+      <created>1777509374816</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1777509374816</updated>
+    </task>
+    <task id="LOCAL-00021" summary="add cloud sync panel in game details.">
+      <option name="closed" value="true" />
+      <created>1777509402965</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1777509402965</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Improvements.">
+      <option name="closed" value="true" />
+      <created>1777936478460</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1777936478460</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Improvements.">
+      <option name="closed" value="true" />
+      <created>1777937718273</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1777937718273</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Improvements.">
+      <option name="closed" value="true" />
+      <created>1777938640141</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1777938640141</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Improvements.">
+      <option name="closed" value="true" />
+      <created>1777938670802</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1777938670802</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="4f8230e7-ed5a-4f97-9f3d-7aaac3c42a0b" value="TOOL_WINDOW" />
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="4f8230e7-ed5a-4f97-9f3d-7aaac3c42a0b">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Add google drive connection." />
+    <MESSAGE value="Organize drive service." />
+    <MESSAGE value="Improve code." />
+    <MESSAGE value="Refactor cloud provider." />
+    <MESSAGE value="Checkpoint" />
+    <MESSAGE value="add ludusavi cloud first code." />
+    <MESSAGE value="Add feature to set ludusavi cloud." />
+    <MESSAGE value="add cloud sync panel in game details." />
+    <MESSAGE value="Improvements." />
+    <option name="LAST_COMMIT_MESSAGE" value="Improvements." />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

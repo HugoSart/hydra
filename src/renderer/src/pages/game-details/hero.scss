@@ -14,6 +14,16 @@ $hero-height: 350px;
   }
 }
 
+@keyframes cloud-sync-spin {
+  0% {
+    transform: rotate(360deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
 .game-details {
   &__hero-panel {
     padding: globals.$spacing-unit;
@@ -228,6 +238,10 @@ $hero-height: 350px;
     width: 26px;
     position: absolute;
     top: -3px;
+  }
+
+  &__cloud-sync-progress-icon {
+    animation: cloud-sync-spin 1s linear infinite;
   }
 
   &__randomizer-button {

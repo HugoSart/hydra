@@ -27,11 +27,21 @@ import { useTranslation } from "react-i18next";
 import { AxiosProgressEvent } from "axios";
 import { formatDownloadProgress } from "@renderer/helpers";
 import { CloudSyncRenameArtifactModal } from "../cloud-sync-rename-artifact-modal/cloud-sync-rename-artifact-modal";
-import { GameArtifact } from "@types";
+import type { GameArtifact } from "@types";
 import { orderBy } from "lodash-es";
 import { MoreVertical } from "lucide-react";
 import { DropdownMenu } from "@renderer/components/dropdown-menu/dropdown-menu";
 import { Tooltip } from "react-tooltip";
+
+const hydraCloudProviderId = "hydra-cloud";
+
+const cloudProviderLabels: Record<string, string> = {
+  box: "Box",
+  dropbox: "Dropbox",
+  [hydraCloudProviderId]: "Hydra Cloud",
+  "google-drive": "Google Drive",
+  onedrive: "OneDrive",
+};
 
 interface CloudSyncPanelProps {
   automaticCloudSync: boolean;
@@ -57,12 +67,20 @@ export function CloudSyncPanel({
 
   const {
     artifacts,
+    ludusaviBackups,
+    ludusaviBackupsUpdatedAt,
     backupPreview,
     uploadingBackup,
     restoringBackup,
+    uploadingLudusaviBackup,
+    restoringLudusaviBackup,
+    refreshingLudusaviBackups,
     loadingPreview,
     freezingArtifact,
     uploadSaveGame,
+    uploadLudusaviCloudBackup,
+    restoreLudusaviCloudBackup,
+    refreshLudusaviBackups,
     downloadGameArtifact,
     deleteGameArtifact,
     toggleArtifactFreeze,
@@ -77,7 +95,16 @@ export function CloudSyncPanel({
   const { showSuccessToast, showErrorToast } = useToast();
 
   const userDetails = useAppSelector((state) => state.userDetails.userDetails);
+  const userPreferences = useAppSelector(
+    (state) => state.userPreferences.value
+  );
   const backupsPerGameLimit = userDetails?.quirks?.backupsPerGameLimit ?? 0;
+  const activeCloudProviderId =
+    userPreferences?.cloudSaveProvider ?? hydraCloudProviderId;
+  const isHydraCloudProvider = activeCloudProviderId === hydraCloudProviderId;
+  const activeCloudProviderLabel =
+    cloudProviderLabels[activeCloudProviderId] ?? activeCloudProviderId;
+  const [ludusaviCloudPath, setLudusaviCloudPath] = useState("ludusavi-backup");
 
   const handleDeleteArtifactClick = async (gameArtifactId: string) => {
     setDeletingArtifact(true);
@@ -107,11 +134,24 @@ export function CloudSyncPanel({
   }, [objectId, shop]);
 
   useEffect(() => {
+    if (!isHydraCloudProvider) return;
     if (!hasActiveSubscription) return;
 
     getGameBackupPreview();
     getGameArtifacts();
-  }, [getGameArtifacts, getGameBackupPreview, hasActiveSubscription]);
+  }, [
+    getGameArtifacts,
+    getGameBackupPreview,
+    hasActiveSubscription,
+    isHydraCloudProvider,
+  ]);
+
+  useEffect(() => {
+    if (isHydraCloudProvider) return;
+
+    getGameBackupPreview();
+    window.electron.getLudusaviCloudPath().then(setLudusaviCloudPath);
+  }, [getGameBackupPreview, isHydraCloudProvider]);
 
   const handleBackupInstallClick = async (artifactId: string) => {
     setBackupDownloadProgress(null);
@@ -137,7 +177,7 @@ export function CloudSyncPanel({
     backupsPerGameLimit > 0 && artifacts.length >= backupsPerGameLimit;
 
   const backupStateLabel = useMemo(() => {
-    if (uploadingBackup) {
+    if (uploadingBackup || uploadingLudusaviBackup) {
       return (
         <span className="cloud-sync-panel__backup-state-label">
           <SyncIcon className="cloud-sync-panel__sync-icon" />
@@ -145,7 +185,7 @@ export function CloudSyncPanel({
         </span>
       );
     }
-    if (restoringBackup) {
+    if (restoringBackup || restoringLudusaviBackup) {
       return (
         <span className="cloud-sync-panel__backup-state-label">
           <SyncIcon className="cloud-sync-panel__sync-icon" />
@@ -171,6 +211,9 @@ export function CloudSyncPanel({
     if (!backupPreview) {
       return t("no_backup_preview");
     }
+    if (!isHydraCloudProvider) {
+      return `Ready to sync saves with ${activeCloudProviderLabel}`;
+    }
     if (artifacts.length === 0) {
       return t("no_backups");
     }
@@ -180,14 +223,176 @@ export function CloudSyncPanel({
     backupDownloadProgress?.progress,
     backupPreview,
     hasReachedLimit,
+    isHydraCloudProvider,
     loadingPreview,
+    activeCloudProviderLabel,
+    restoringLudusaviBackup,
     restoringBackup,
     t,
+    uploadingLudusaviBackup,
     uploadingBackup,
   ]);
 
   const disableActions =
     uploadingBackup || restoringBackup || deletingArtifact || freezingArtifact;
+  const disableExternalActions =
+    uploadingLudusaviBackup ||
+    restoringLudusaviBackup ||
+    refreshingLudusaviBackups;
+
+  if (!isHydraCloudProvider) {
+    return (
+      <>
+        <div className="cloud-sync-panel__section-header">
+          <h2>Cloud Saves</h2>
+          <p>
+            Sync this game&apos;s saves with {activeCloudProviderLabel} through
+            Ludusavi.
+          </p>
+        </div>
+
+        <div className="cloud-sync-panel__header">
+          <div className="cloud-sync-panel__title-container">
+            <p>{backupStateLabel}</p>
+            <button
+              type="button"
+              className="cloud-sync-panel__manage-files-button"
+              onClick={() => setShowCloudSyncFilesModal(true)}
+              disabled={disableExternalActions || loadingPreview}
+            >
+              {t("manage_files")}
+            </button>
+          </div>
+        </div>
+
+        <div className="cloud-sync-panel__provider-summary">
+          <div>
+            <small>Provider</small>
+            <strong>{activeCloudProviderLabel}</strong>
+          </div>
+          <div>
+            <small>Remote folder</small>
+            <strong>{ludusaviCloudPath}</strong>
+          </div>
+        </div>
+
+        <div className="cloud-sync-panel__external-actions">
+          <Button
+            type="button"
+            onClick={uploadLudusaviCloudBackup}
+            disabled={disableExternalActions}
+          >
+            {uploadingLudusaviBackup ? (
+              <SyncIcon className="cloud-sync-panel__sync-icon" />
+            ) : (
+              <UploadIcon />
+            )}
+            {t("create_backup")}
+          </Button>
+        </div>
+
+        <div className="cloud-sync-panel__backups-header">
+          <div>
+            <h3>{t("backups")}</h3>
+            {ludusaviBackupsUpdatedAt && (
+              <small>
+                Last refreshed {formatDateTime(ludusaviBackupsUpdatedAt)}
+              </small>
+            )}
+          </div>
+          <div className="cloud-sync-panel__backups-header-actions">
+            <span className="cloud-sync-panel__backups-count">
+              {formatNumber(ludusaviBackups.length)}
+            </span>
+            <Button
+              type="button"
+              theme="outline"
+              onClick={refreshLudusaviBackups}
+              disabled={disableExternalActions}
+            >
+              <SyncIcon
+                className={
+                  refreshingLudusaviBackups
+                    ? "cloud-sync-panel__sync-icon"
+                    : undefined
+                }
+              />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        {ludusaviBackups.length > 0 ? (
+          <ul className="cloud-sync-panel__artifacts">
+            {orderBy(ludusaviBackups, ["when"], ["desc"]).map((backup) => {
+              const backupName =
+                backup.comment ||
+                t("backup_from", {
+                  date: formatDate(backup.when),
+                });
+
+              return (
+                <li key={backup.name} className="cloud-sync-panel__artifact">
+                  <div className="cloud-sync-panel__artifact-info">
+                    <div className="cloud-sync-panel__artifact-header">
+                      <span className="cloud-sync-panel__artifact-label">
+                        <span className="cloud-sync-panel__artifact-label-text">
+                          {backupName}
+                        </span>
+                      </span>
+                    </div>
+
+                    <span className="cloud-sync-panel__artifact-meta">
+                      <DeviceDesktopIcon size={14} />
+                      {backup.os ?? "unknown"}
+                    </span>
+
+                    <span className="cloud-sync-panel__artifact-meta">
+                      <InfoIcon size={14} />
+                      {backup.name}
+                    </span>
+
+                    <span className="cloud-sync-panel__artifact-meta">
+                      <ClockIcon size={14} />
+                      {formatDateTime(backup.when)}
+                    </span>
+                  </div>
+
+                  <div className="cloud-sync-panel__artifact-actions">
+                    <Button
+                      type="button"
+                      theme="outline"
+                      onClick={() => restoreLudusaviCloudBackup(backup.name)}
+                      disabled={disableExternalActions}
+                    >
+                      {restoringLudusaviBackup ? (
+                        <SyncIcon className="cloud-sync-panel__sync-icon" />
+                      ) : (
+                        <HistoryIcon />
+                      )}
+                      {t("install_backup")}
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : ludusaviBackupsUpdatedAt ? (
+          <p>{t("no_backups_created")}</p>
+        ) : (
+          <p>
+            Refresh backups to list existing Ludusavi backups for this game.
+          </p>
+        )}
+
+        <p className="cloud-sync-panel__external-note">
+          External cloud saves use Ludusavi&apos;s latest-backup sync flow.
+          Backup history and artifact management remain available only with
+          Hydra Cloud.
+        </p>
+      </>
+    );
+  }
 
   if (!hasActiveSubscription) {
     return (
@@ -209,7 +414,7 @@ export function CloudSyncPanel({
       />
 
       <div className="cloud-sync-panel__section-header">
-        <h2>{t("cloud_save")}</h2>
+        <h2>Cloud Saves</h2>
         <p>{t("cloud_save_description")}</p>
       </div>
 
@@ -219,12 +424,12 @@ export function CloudSyncPanel({
             <div className="cloud-sync-panel__automatic-sync-label">
               {t("enable_automatic_cloud_sync")}
               <span className="cloud-sync-panel__automatic-sync-badge">
-                Hydra Cloud
+                {cloudProviderLabels[hydraCloudProviderId]}
               </span>
             </div>
           }
           checked={automaticCloudSync}
-          disabled={!hasActiveSubscription || !game?.executablePath}
+          disabled={!game?.executablePath}
           onChange={onToggleAutomaticCloudSync}
         />
       </div>

@@ -395,17 +395,48 @@ contextBridge.exposeInMainWorld("electron", {
     gameArtifactId: string
   ) =>
     ipcRenderer.invoke("downloadGameArtifact", objectId, shop, gameArtifactId),
+  uploadLudusaviCloudBackup: (objectId: string, shop: GameShop) =>
+    ipcRenderer.invoke("uploadLudusaviCloudBackup", objectId, shop),
+  restoreLudusaviCloudBackup: (
+    objectId: string,
+    shop: GameShop,
+    backupName?: string
+  ) =>
+    ipcRenderer.invoke(
+      "restoreLudusaviCloudBackup",
+      objectId,
+      shop,
+      backupName
+    ),
+  listLudusaviGameBackups: (objectId: string, shop: GameShop) =>
+    ipcRenderer.invoke("listLudusaviGameBackups", objectId, shop),
   getGameArtifacts: (objectId: string, shop: GameShop) =>
     ipcRenderer.invoke("getGameArtifacts", objectId, shop),
   getGameBackupPreview: (objectId: string, shop: GameShop) =>
     ipcRenderer.invoke("getGameBackupPreview", objectId, shop),
+  listLudusaviCloudProviders: () =>
+    ipcRenderer.invoke("listLudusaviCloudProviders"),
+  getCurrentLudusaviCloudProvider: () =>
+    ipcRenderer.invoke("getCurrentLudusaviCloudProvider"),
+  setLudusaviCloudProvider: (providerId: string) =>
+    ipcRenderer.invoke("setLudusaviCloudProvider", providerId),
+  clearLudusaviCloudProvider: () =>
+    ipcRenderer.invoke("clearLudusaviCloudProvider"),
+  getLudusaviCloudPath: () => ipcRenderer.invoke("getLudusaviCloudPath"),
+  setLudusaviCloudPath: (cloudPath: string) =>
+    ipcRenderer.invoke("setLudusaviCloudPath", cloudPath),
   selectGameBackupPath: (
     shop: GameShop,
     objectId: string,
     backupPath: string | null
   ) => ipcRenderer.invoke("selectGameBackupPath", shop, objectId, backupPath),
-  onUploadComplete: (objectId: string, shop: GameShop, cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
+  onUploadComplete: (
+    objectId: string,
+    shop: GameShop,
+    cb: (success: boolean) => void
+  ) => {
+    const listener = (_event: Electron.IpcRendererEvent, success: boolean) =>
+      cb(success);
     ipcRenderer.on(`on-upload-complete-${objectId}-${shop}`, listener);
     return () =>
       ipcRenderer.removeListener(
@@ -432,9 +463,10 @@ contextBridge.exposeInMainWorld("electron", {
   onBackupDownloadComplete: (
     objectId: string,
     shop: GameShop,
-    cb: () => void
+    cb: (success: boolean) => void
   ) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
+    const listener = (_event: Electron.IpcRendererEvent, success: boolean) =>
+      cb(success);
     ipcRenderer.on(`on-backup-download-complete-${objectId}-${shop}`, listener);
     return () =>
       ipcRenderer.removeListener(

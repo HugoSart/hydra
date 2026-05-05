@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { PencilIcon } from "@primer/octicons-react";
+import { PencilIcon, SyncIcon } from "@primer/octicons-react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
@@ -70,7 +70,8 @@ export function GameDetailsContent() {
   const { userDetails, hasActiveSubscription } = useUserDetails();
   const { library } = useLibrary();
 
-  const { getGameArtifacts } = useContext(cloudSyncContext);
+  const { getGameArtifacts, isCloudSyncOperationRunning } =
+    useContext(cloudSyncContext);
 
   const aboutTheGame = useMemo(() => {
     const aboutTheGame = shopDetails?.about_the_game;
@@ -190,11 +191,15 @@ export function GameDetailsContent() {
                     onClick={handleCloudSaveButtonClick}
                   >
                     <div className="game-details__cloud-icon-container">
-                      <img
-                        src={cloudIconAnimated}
-                        alt=""
-                        className="game-details__cloud-icon"
-                      />
+                      {isCloudSyncOperationRunning ? (
+                        <SyncIcon className="game-details__cloud-sync-progress-icon" />
+                      ) : (
+                        <img
+                          src={cloudIconAnimated}
+                          alt=""
+                          className="game-details__cloud-icon"
+                        />
+                      )}
                     </div>
                     {t("cloud_save")}
                   </button>

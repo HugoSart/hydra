@@ -38,6 +38,7 @@ export function SettingsAccount() {
   const {
     userDetails,
     hasActiveSubscription,
+    isDevSubscriptionOverrideEnabled,
     patchUser,
     fetchUserDetails,
     updateUserDetails,
@@ -95,6 +96,18 @@ export function SettingsAccount() {
   const getHydraCloudSectionContent = () => {
     const hasSubscribedBefore = Boolean(userDetails?.subscription?.expiresAt);
     const isRenewalActive = userDetails?.subscription?.status === "active";
+
+    if (isDevSubscriptionOverrideEnabled && !hasSubscribedBefore) {
+      return {
+        description: (
+          <>
+            <small>Development subscription override enabled.</small>
+            <small>Cloud write operations may still fail.</small>
+          </>
+        ),
+        callToAction: t("manage_subscription"),
+      };
+    }
 
     if (!hasSubscribedBefore) {
       return {

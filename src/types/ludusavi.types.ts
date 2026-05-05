@@ -39,6 +39,17 @@ export interface LudusaviConfig {
     files: string[];
     registry: [];
   }[];
+  cloud?: {
+    remote?: Record<string, Record<string, unknown>> | null;
+    path?: string;
+    synchronize?: boolean;
+  };
+  backup?: {
+    path?: string;
+  };
+  restore?: {
+    path?: string;
+  };
 }
 
 export interface LudusaviBackupMapping {
@@ -48,4 +59,22 @@ export interface LudusaviBackupMapping {
       size: number;
     };
   };
+}
+
+export interface LudusaviBackupEntry {
+  name: string;
+  when: string;
+  os?: "windows" | "linux" | "mac" | "other" | null;
+  locked: boolean;
+  comment?: string | null;
+}
+
+export interface LudusaviBackups {
+  games: Record<
+    string,
+    {
+      backupPath: string;
+      backups: LudusaviBackupEntry[];
+    }
+  >;
 }
